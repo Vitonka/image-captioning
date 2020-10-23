@@ -2,15 +2,14 @@
 My PhD studies on the image captioning topic
 
 Useful links:
-[https://cocodataset.org/#format-data](Data format)
-[https://cocodataset.org/#download](Data download)
-[https://gist.github.com/mkocabas/a6177fc00315403d31572e17700d7fd9](Data download instruction)
+[Data format](https://cocodataset.org/#format-data)
+[Data download](https://cocodataset.org/#download)
+[Data download instruction](https://gist.github.com/mkocabas/a6177fc00315403d31572e17700d7fd9)
 
 Notes about project structure:
-[https://drivendata.github.io/cookiecutter-data-science/](Cookiecutter Data Science)
-[https://blog.floydhub.com/structuring-and-planning-your-machine-learning-project/](How to plan and execute your ML and DL projects)
-
+[Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/)
+[How to plan and execute your ML and DL projects](https://blog.floydhub.com/structuring-and-planning-your-machine-learning-project/)
 
 Заметки на полях:
 * импортировать Python модули из git submodule как-то нетривиально...
-* если скачать файл с аннотациями с [https://cocodataset.org/#download](официального сайта COCO), то используя что API из документации, что [https://github.com/cocodataset/cocoapi](официальный пакет) для чтения (и более продвинутый [https://github.com/ruotianluo/coco-caption](неофициальный), мы получаем ошибку. Судя по всему, формат файла какой-то неправильный. Поэтому хоть такого я нигде и не видел, попробуем заиспользовать [https://pytorch.org/docs/stable/torchvision/datasets.html#captions](реализацию из PyTorch)
+* если скачать файл с аннотациями с [официального сайта COCO](https://cocodataset.org/#download), то используя что API из документации, что [официальный пакет](https://github.com/cocodataset/cocoapi) для чтения (и более продвинутый [неофициальный](https://github.com/ruotianluo/coco-caption), мы получаем ошибку. Судя по всему, формат файла какой-то неправильный. Поэтому хоть такого я нигде и не видел, попробуем заиспользовать [реализацию из PyTorch](https://pytorch.org/docs/stable/torchvision/datasets.html#captions).
