@@ -1,1 +1,1 @@
-from .utils import download_from_url
+from .download import download_from_url

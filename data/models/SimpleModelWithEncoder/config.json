@@ -1,0 +1,12 @@
+{
+  "dataset_name": "mini_coco",
+  "min_word_freq": 1,
+  "batch_size": 4,
+  "max_length": 15,
+  "beam_size": 3,
+  "model_name": "SimpleModelWithEncoder",
+  "embedding_dim": 512,
+  "hidden_size": 512,
+  "optimizer_learning_rate": 0.0001,
+  "epochs": 500
+}
