@@ -53,3 +53,7 @@ def simple_beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=
     assert(np.argmax(cur_probs) == len(cur_probs) - 1)
 
     return cur_hyps[-1]
+
+
+def simple_beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
+
