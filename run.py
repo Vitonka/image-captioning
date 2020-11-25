@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     train_dataset = get_train_dataset(config['dataset_name'])
 
-    w2i, i2w = create_dictionary(train_dataset)
+    w2i, i2w = create_dictionary(train_dataset, min_word_freq=config['min_word_freq'])
 
     trainloader = get_train_dataloader(config['dataset_name'], config['batch_size'], w2i)
     valloader = get_val_dataloader(config['dataset_name'], batch_size=1)

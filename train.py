@@ -1,5 +1,5 @@
 import evaluation
-from beam_search import simple_beam_search
+from beam_search import simple_beam_search, beam_search
 from tqdm import tqdm
 
 
@@ -27,7 +27,13 @@ def validate(model, dataloader, device, w2i, i2w, max_length=15, beam_size=3):
     gts_dict = {}
     hyps_dict = {}
     for i, (image, texts) in tqdm(enumerate(dataloader), total=len(dataloader)):
-        hyp = simple_beam_search(model, image, w2i, i2w, device, max_length, beam_size)[1:]
+        hyp, probs = simple_beam_search(model, image, w2i, i2w, device, max_length, beam_size)
+        print(hyp)
+        print(probs)
+        hyp = hyp[-1][1:]
+        hyp2, probs2 = beam_search(model, image, w2i, i2w, device, max_length, beam_size)
+        print(hyp2)
+        print(probs2)
         if hyp[-1] == w2i['<END>']:
             hyp = hyp[:-1]
         hyp = ' '.join([i2w[word] for word in hyp])

@@ -1,6 +1,6 @@
 {
-  "dataset_name": "mini_coco",
-  "min_word_freq": 1,
+  "dataset_name": "one_image_one_caption",
+  "min_word_freq": 0,
   "batch_size": 4,
   "max_length": 15,
   "beam_size": 3,
