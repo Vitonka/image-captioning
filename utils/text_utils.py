@@ -46,3 +46,26 @@ def create_dictionary(dataset, min_word_freq=1):
         w2i[word] = index
 
     return w2i, i2w
+
+
+def create_dictionary_from_annotations(annotations, min_word_freq=1):
+    c = defaultdict(int)
+
+    for annotation in annotations:
+        text = clean_text(annotation['caption'])
+        for word in text:
+            c[word] += 1
+
+    c_filtered = [word for word in c if c[word] > min_word_freq]
+    c_filtered.append(START)
+    c_filtered.append(UNK)
+    c_filtered.append(END)
+
+    i2w = {}
+    w2i = {}
+
+    for index, word in enumerate(c_filtered):
+        i2w[index] = word
+        w2i[word] = index
+
+    return w2i, i2w

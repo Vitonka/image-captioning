@@ -3,6 +3,7 @@ import json
 from shutil import copyfile
 import argparse
 import os
+from utils.text_utils import create_dictionary_from_annotations, transform_text
 
 ROOT = 'data/datasets'
 ANNOTATIONS_PATH = 'annotations/captions_{0}2014.json'
@@ -51,24 +52,41 @@ def copy_image_files(dataset, out_dataset, split_name, split, train_raw, val_raw
                 copyfile(old_image_path, new_image_path)
 
 
+def transform_annotations(annotations, w2i):
+    transformed_annotations = []
+    for annotation in annotations:
+        annotation['caption'] = transform_text(annotation['caption'], w2i)
+        transform_annotations.append(annotation)
+    return transformed_annotations
+
+
 def preprocess_coco(dataset, out_dataset):
+    # Get Karpathy splits
     train, val, test = read_karpaty_splits(os.path.join(ROOT, dataset, KARPATHY_PATH))
 
+    # Open raw train and validation annotations
     with open(os.path.join(ROOT, dataset, ANNOTATIONS_PATH.format('train'))) as f:
         train_raw = json.load(f)
 
     with open(os.path.join(ROOT, dataset, ANNOTATIONS_PATH.format('val'))) as f:
         val_raw = json.load(f)
 
+    # Split annotations according to Karpathy splits
     train_annotations, val_annotations, test_annotations = \
         extract_split_annotations(train, train_raw, val_raw), \
         extract_split_annotations(val, train_raw, val_raw), \
         extract_split_annotations(test, train_raw, val_raw)
 
+    # Create dictionary and preprocess train annotations
+    w2i, i2w = create_dictionary_from_annotations(train_annotations)
+    train_annotations['annotations'] = transform_annotations(train_annotations['annotations'])
+
+    # Create dataset directories
     os.mkdir(os.path.join(ROOT, out_dataset))
     os.mkdir(os.path.join(ROOT, out_dataset, 'images'))
     os.mkdir(os.path.join(ROOT, out_dataset, 'annotations'))
 
+    # Copy dataset data into dataset directories
     for split_name, split_annotations, split_ids in zip(['train', 'val', 'test'], [train_annotations, val_annotations, test_annotations], [train, val, test]):
         # Save annotations
         with open(os.path.join(ROOT, out_dataset, ANNOTATIONS_PATH.format(split_name)), 'w') as f:
