@@ -1,5 +1,5 @@
-mkdir coco
-cd coco
+mkdir coco_raw
+cd coco_raw
 mkdir images
 cd images
 
@@ -25,3 +25,10 @@ unzip image_info_test2014.zip
 
 rm annotations_trainval2014.zip
 rm image_info_test2014.zip
+
+wget http://cs.stanford.edu/people/karpathy/deepimagesent/caption_datasets.zip
+unzip caption_datasets.zip
+
+rm dataset_flickr30k.json
+rm dataset_flickr8k.json
+rm caption_dataset.zip
