@@ -102,7 +102,7 @@ def preprocess_coco(dataset, out_dataset):
 
     # Create dataset directories
     os.mkdir(os.path.join(ROOT, out_dataset))
-    #os.mkdir(os.path.join(ROOT, out_dataset, 'images'))
+    os.mkdir(os.path.join(ROOT, out_dataset, 'images'))
     os.mkdir(os.path.join(ROOT, out_dataset, 'annotations'))
 
     # Copy dataset data into dataset directories
@@ -112,7 +112,14 @@ def preprocess_coco(dataset, out_dataset):
             json.dump(split_annotations, f)
 
         # Copy images
-        #copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
+        copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
+
+    # Save dictionary
+    with open(os.path.join(ROOT, out_dataset, 'w2i.json'), 'w') as f:
+        json.dump(w2i, f)
+
+    with open(os.path.join(ROOT, out_dataset, 'i2w.json'), 'w') as f:
+        json.dump(i2w, f)
 
 
 if __name__ == '__main__':
