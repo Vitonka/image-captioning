@@ -1,7 +1,7 @@
 {
-  "dataset_name": "one_image_one_caption",
+  "dataset_name": "coco",
   "min_word_freq": 0,
-  "batch_size": 4,
+  "batch_size": 100,
   "max_length": 15,
   "beam_size": 3,
   "model_name": "SimpleModelWithEncoder",

@@ -42,7 +42,7 @@ class SimpleCaptionsTrainDataset(SimpleCaptionsDatasetBase, Dataset):
 
     def __getitem__(self, idx):
         image_filename = self._image_id_to_file_name[self._captions[idx].image_id]
-        image = Image.open(os.path.join(self._images_path, image_filename))
+        image = Image.open(os.path.join(self._images_path, image_filename)).convert('RGB')
         if self._transform is not None:
             image = self._transform(image)
         return (image, self._captions[idx].text)

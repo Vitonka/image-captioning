@@ -8,11 +8,12 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 
 from utils.text_utils import create_dictionary
-from dataset import get_train_dataset, get_train_dataloader, get_val_dataloader
-from beam_search import simple_beam_search
+from custom_dataset import get_coco_dataloaders
+from beam_search import beam_search
 from train import train, validate
 from models import SimpleModel, SimpleModelWithEncoder
 
+DATASETS_ROOT = 'data/datasets'
 SUMMARY_WRITER_ROOT='data/runs'
 MODEL_ROOT = 'data/models'
 MODEL_FILE = 'model.pth'
@@ -29,12 +30,16 @@ if __name__ == '__main__':
     # Set up device for training
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    train_dataset = get_train_dataset(config['dataset_name'])
+    dataset_path = os.path.join(DATASETS_ROOT, config['dataset_name'])
 
-    w2i, i2w = create_dictionary(train_dataset, min_word_freq=config['min_word_freq'])
+    with open(os.path.join(dataset_path, 'w2i.json')) as f:
+        w2i = json.load(f)
 
-    trainloader = get_train_dataloader(config['dataset_name'], config['batch_size'], w2i)
-    valloader = get_val_dataloader(config['dataset_name'], batch_size=1)
+    with open(os.path.join(dataset_path, 'i2w.json')) as f:
+        i2w = json.load(f)
+        i2w = {int(i): i2w[i] for i in i2w}
+
+    trainloader, valloader, _ = get_coco_dataloaders(dataset_path, config['batch_size'], 1, 1)
 
     model = SimpleModelWithEncoder(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
     model.to(device)
