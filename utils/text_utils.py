@@ -51,7 +51,7 @@ def create_dictionary(dataset, min_word_freq=1):
 def create_dictionary_from_annotations(annotations, min_word_freq=1):
     c = defaultdict(int)
 
-    for annotation in annotations:
+    for annotation in annotations['annotations']:
         text = clean_text(annotation['caption'])
         for word in text:
             c[word] += 1

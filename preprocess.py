@@ -3,7 +3,7 @@ import json
 from shutil import copyfile
 import argparse
 import os
-from utils.text_utils import create_dictionary_from_annotations, transform_text
+from utils.text_utils import create_dictionary_from_annotations, transform_text, clean_text
 
 ROOT = 'data/datasets'
 ANNOTATIONS_PATH = 'annotations/captions_{0}2014.json'
@@ -29,7 +29,7 @@ def read_karpaty_splits(karpathy_split_path):
 
 
 def extract_split_annotations(split, train_raw, val_raw):
-    split_annotations = train_raw
+    split_annotations = train_raw.copy()
 
     annotations = []
     for raw in [train_raw, val_raw]:
@@ -37,7 +37,14 @@ def extract_split_annotations(split, train_raw, val_raw):
             if annotation['image_id'] in split:
                 annotations.append(annotation)
 
+    images = []
+    for raw in [train_raw, val_raw]:
+        for image in raw['images']:
+            if image['id'] in split:
+                images.append(image)
+
     split_annotations['annotations'] = annotations
+    split_annotations['images'] = images
     return split_annotations
 
 
@@ -56,8 +63,16 @@ def transform_annotations(annotations, w2i):
     transformed_annotations = []
     for annotation in annotations:
         annotation['caption'] = transform_text(annotation['caption'], w2i)
-        transform_annotations.append(annotation)
+        transformed_annotations.append(annotation)
     return transformed_annotations
+
+
+def clean_annotations(annotations):
+    cleaned_annotations = []
+    for annotation in annotations:
+        annotation['caption'] = ' '.join(clean_text(annotation['caption']))
+        cleaned_annotations.append(annotation)
+    return cleaned_annotations
 
 
 def preprocess_coco(dataset, out_dataset):
@@ -79,11 +94,15 @@ def preprocess_coco(dataset, out_dataset):
 
     # Create dictionary and preprocess train annotations
     w2i, i2w = create_dictionary_from_annotations(train_annotations)
-    train_annotations['annotations'] = transform_annotations(train_annotations['annotations'])
+    train_annotations['annotations'] = transform_annotations(train_annotations['annotations'], w2i)
+
+    # Clean val and test annotations
+    val_annotations['annotations'] = clean_annotations(val_annotations['annotations'])
+    test_annotations['annotations'] = clean_annotations(test_annotations['annotations'])
 
     # Create dataset directories
     os.mkdir(os.path.join(ROOT, out_dataset))
-    os.mkdir(os.path.join(ROOT, out_dataset, 'images'))
+    #os.mkdir(os.path.join(ROOT, out_dataset, 'images'))
     os.mkdir(os.path.join(ROOT, out_dataset, 'annotations'))
 
     # Copy dataset data into dataset directories
@@ -93,7 +112,7 @@ def preprocess_coco(dataset, out_dataset):
             json.dump(split_annotations, f)
 
         # Copy images
-        copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
+        #copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
 
 
 if __name__ == '__main__':
