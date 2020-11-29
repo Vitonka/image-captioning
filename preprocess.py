@@ -1,4 +1,8 @@
 #!/opt/conda/bin/python3
+import h5py
+import numpy as np
+from PIL import Image
+from torchvision import transforms
 import json
 from shutil import copyfile
 import argparse
@@ -9,6 +13,12 @@ ROOT = 'data/datasets'
 ANNOTATIONS_PATH = 'annotations/captions_{0}2014.json'
 IMAGES_PATH = 'images/{0}2014'
 KARPATHY_PATH = 'dataset_coco.json'
+IMAGE_TRANSFORM = transforms.Compose([
+    transforms.Resize(224),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
 
 def read_karpaty_splits(karpathy_split_path):
     with open(karpathy_split_path) as f:
@@ -58,6 +68,17 @@ def copy_image_files(dataset, out_dataset, split_name, split, train_raw, val_raw
                 new_image_path = os.path.join(ROOT, out_dataset, IMAGES_PATH.format(split_name), image['file_name'])
                 copyfile(old_image_path, new_image_path)
 
+def images_to_hdf5(dataset_folder, images_folder, images, out_filename):
+    h5_file = h5py.File(os.path.join(dataset_folder, out_filename))
+    data = h5_file.create_dataset(
+        'images', shape=(len(images), 3, 224, 224), dtype=np.float32, fillvalue=0)
+    images.sort(key=lambda x: x['id'])
+    for i, image in tqdm(list(enumerate(images))):
+        img = Image.open(os.path.join(images_folder, image['file_name'])).convert('RGB')
+        img = IMAGE_TRANSFORM(img)
+        data[i] = img.numpy()
+
+    h5_file.close()
 
 def transform_annotations(annotations, w2i):
     transformed_annotations = []
@@ -113,6 +134,9 @@ def preprocess_coco(dataset, out_dataset):
 
         # Copy images
         copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
+
+        # Preprocess images and save to hdf5 file
+        images_to_hdf5(os.path.join(ROOT, out_dataset), os.path.join(ROOT, out_dataset, IMAGES_PATH.format(split_name)), split_annotations, split_name + '.h5')
 
     # Save dictionary
     with open(os.path.join(ROOT, out_dataset, 'w2i.json'), 'w') as f:

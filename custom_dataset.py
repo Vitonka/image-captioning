@@ -1,5 +1,6 @@
 import os
 import json
+import h5py
 from collections import namedtuple, defaultdict
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -16,16 +17,21 @@ IMAGE_TRANSFORM = transforms.Compose([
 ])
 
 class SimpleCaptionsDatasetBase():
-    def __init__(self, images_path, annotations_path, transform=None, *args, **kwargs):
-        self._images_path = images_path
-        self._transform = transform
+    def __init__(self, annotations_path, hdf5_path, *args, **kwargs):
+        self._h5file = h5py.File(hdf5_path, 'r')
+        self._images_data = self._h5file['images']
 
         with open(annotations_path) as f:
             annotations = json.load(f)
 
-        self._image_id_to_file_name = {}
+        self._image_ids = []
         for image in annotations['images']:
-            self._image_id_to_file_name[image['id']] = image['file_name']
+            self._image_ids.append(image['id'])
+
+        self._image_ids.sort()
+        self._image_id_to_idx = {}
+        for i, image_id in enumerate(self._image_ids):
+            self._image_id_to_idx[image_id] = i
 
         self._captions = []
         self._image_id_to_captions = defaultdict(list)
@@ -41,35 +47,28 @@ class SimpleCaptionsTrainDataset(SimpleCaptionsDatasetBase, Dataset):
         return len(self._captions)
 
     def __getitem__(self, idx):
-        image_filename = self._image_id_to_file_name[self._captions[idx].image_id]
-        image = Image.open(os.path.join(self._images_path, image_filename)).convert('RGB')
-        if self._transform is not None:
-            image = self._transform(image)
-        return (image, self._captions[idx].text)
+        image_idx = self._image_id_to_idx[self._captions[idx].image_id]
+        return (torch.from_numpy(self._images_data[image_idx]), self._captions[idx].text)
 
 class SimpleCaptionsTestDataset(SimpleCaptionsDatasetBase, Dataset):
     def __init__(self, *args, **kwargs):
         super(SimpleCaptionsTestDataset, self).__init__(*args,**kwargs)
 
     def __len__(self):
-        return len(self._image_id_to_file_name)
+        return len(self._image_ids)
 
     def __getitem__(self, idx):
-        image_id = list(self._image_id_to_file_name.keys())[idx]
-        image_filename = self._image_id_to_file_name[image_id]
-        image = Image.open(os.path.join(self._images_path, image_filename))
-        if self._transform is not None:
-            image = self._transform(image)
-        return (image, [self._captions[i].text for i in self._image_id_to_captions[image_id]])
+        image_id = self._image_ids[idx]
+        return (torch.from_numpy(self._images_data[idx]), [self._captions[i].text for i in self._image_id_to_captions[image_id]])
 
 def get_coco_datasets(dataset_path):
     images_path = os.path.join(dataset_path, 'images')
     annotations_path = os.path.join(dataset_path, 'annotations')
 
     return (
-        SimpleCaptionsTrainDataset(os.path.join(images_path, 'train2014'), os.path.join(annotations_path, 'captions_train2014.json'), IMAGE_TRANSFORM),
-        SimpleCaptionsTestDataset(os.path.join(images_path, 'val2014'), os.path.join(annotations_path, 'captions_val2014.json'), IMAGE_TRANSFORM),
-        SimpleCaptionsTestDataset(os.path.join(images_path, 'test2014'), os.path.join(annotations_path, 'captions_test2014.json'), IMAGE_TRANSFORM))
+        SimpleCaptionsTrainDataset(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.h5')),
+        SimpleCaptionsTestDataset(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
+        SimpleCaptionsTestDataset(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
 
 
 def collate_fn_train(batch):
