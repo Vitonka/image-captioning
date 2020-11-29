@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 
 from utils.text_utils import create_dictionary
-from custom_dataset import get_coco_dataloaders
+from dataset import get_coco_dataloaders
 from beam_search import beam_search
 from train import train, validate
 from models import SimpleModel, SimpleModelWithEncoder
