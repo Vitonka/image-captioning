@@ -9,13 +9,6 @@ from PIL import Image
 
 Caption = namedtuple('Caption', ['text', 'image_id'])
 
-IMAGE_TRANSFORM = transforms.Compose([
-    transforms.Resize(224),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-
 class SimpleCaptionsDatasetBase():
     def __init__(self, annotations_path, hdf5_path, *args, **kwargs):
         self._h5file = h5py.File(hdf5_path, 'r')
@@ -39,9 +32,9 @@ class SimpleCaptionsDatasetBase():
             self._image_id_to_captions[annotation['image_id']].append(len(self._captions))
             self._captions.append(Caption(text=annotation['caption'], image_id=annotation['image_id']))
 
-class SimpleCaptionsTrainDataset(SimpleCaptionsDatasetBase, Dataset):
+class SimpleCaptionsDatasetByCaption(SimpleCaptionsDatasetBase, Dataset):
     def __init__(self, *args, **kwargs):
-        super(SimpleCaptionsTrainDataset, self).__init__(*args,**kwargs)
+        super(SimpleCaptionsDatasetByCaption, self).__init__(*args,**kwargs)
 
     def __len__(self):
         return len(self._captions)
@@ -50,9 +43,9 @@ class SimpleCaptionsTrainDataset(SimpleCaptionsDatasetBase, Dataset):
         image_idx = self._image_id_to_idx[self._captions[idx].image_id]
         return (torch.from_numpy(self._images_data[image_idx]), self._captions[idx].text)
 
-class SimpleCaptionsTestDataset(SimpleCaptionsDatasetBase, Dataset):
+class SimpleCaptionsDatasetByImage(SimpleCaptionsDatasetBase, Dataset):
     def __init__(self, *args, **kwargs):
-        super(SimpleCaptionsTestDataset, self).__init__(*args,**kwargs)
+        super(SimpleCaptionsDatasetByImage, self).__init__(*args,**kwargs)
 
     def __len__(self):
         return len(self._image_ids)
@@ -66,17 +59,20 @@ def get_coco_datasets(dataset_path):
     annotations_path = os.path.join(dataset_path, 'annotations')
 
     return (
-        SimpleCaptionsTrainDataset(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.h5')),
-        SimpleCaptionsTestDataset(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
-        SimpleCaptionsTestDataset(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.h5')),
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
 
 
 def collate_fn_train(batch):
     images_list = []
     texts_list = []
-    for image, text in batch:
-        images_list.append(image)
-        texts_list.append(torch.tensor(text))
+    for image, texts in batch:
+        if not isinstance(texts, list):
+            texts = [texts]
+        for text in texts:
+            images_list.append(image)
+            texts_list.append(torch.tensor(text))
 
     images_list, texts_list = \
         list(zip(*sorted(zip(images_list, texts_list), key=lambda x: x[1].shape[0], reverse=True)))
