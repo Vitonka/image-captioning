@@ -3,6 +3,9 @@ import h5py
 import numpy as np
 from PIL import Image
 from torchvision import transforms
+import torch
+import torchvision
+from torch import nn
 import json
 from shutil import copyfile
 import argparse
@@ -69,7 +72,7 @@ def copy_image_files(dataset, out_dataset, split_name, split, train_raw, val_raw
                 copyfile(old_image_path, new_image_path)
 
 def images_to_hdf5(dataset_folder, images_folder, images, out_filename):
-    h5_file = h5py.File(os.path.join(dataset_folder, out_filename))
+    h5_file = h5py.File(os.path.join(dataset_folder, out_filename), 'w')
     data = h5_file.create_dataset(
         'images', shape=(len(images), 3, 224, 224), dtype=np.float32, fillvalue=0)
     images.sort(key=lambda x: x['id'])
@@ -79,6 +82,25 @@ def images_to_hdf5(dataset_folder, images_folder, images, out_filename):
         data[i] = img.numpy()
 
     h5_file.close()
+
+def images_to_embeddings(dataset_folder, h5_images, out_filename):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    with h5py.File(os.path.join(dataset_folder, h5_images), 'r') as f:
+        out_file = h5py.File(os.path.join(dataset_folder, out_filename), 'w')
+        data = out_file.create_dataset('features', shape=(len(f['images']), 2048, 7, 7), dtype=np.float32, fillvalue=0)
+        resnet = torchvision.models.resnet101(pretrained=True)
+        modules = list(resnet.children())[:-2]
+        resnet = nn.Sequential(*modules)
+        resnet.to(device)
+        for i, image in tqdm(enumerate(f['images'])):
+            image = torch.from_numpy(image)
+            image = image.unsqueeze(0)
+            image = image.to(device)
+            temp = resnet(image)
+            data[i] = temp[0].cpu().detach().numpy()
+
+        out_file.close()
 
 def transform_annotations(annotations, w2i):
     transformed_annotations = []
@@ -137,6 +159,9 @@ def preprocess_coco(dataset, out_dataset):
 
         # Preprocess images and save to hdf5 file
         images_to_hdf5(os.path.join(ROOT, out_dataset), os.path.join(ROOT, out_dataset, IMAGES_PATH.format(split_name)), split_annotations, split_name + '.h5')
+
+        # Preprocess image features with resnet and save to hdf5 file
+        images_to_embeddings(os.path.join(ROOT, out_dataset), split_name + '.h5', split_name + '_features.h5')
 
     # Save dictionary
     with open(os.path.join(ROOT, out_dataset, 'w2i.json'), 'w') as f:
