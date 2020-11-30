@@ -17,14 +17,18 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
     h0 = model.encoder(image)
 
     # Initialize start hypothesis, their probabilities and hidden states
-    cur_hyps = torch.tensor([[w2i[START]]])
-    cur_probs = torch.tensor([1.])
+    cur_hyps = torch.tensor([[w2i[START]]]).to(device)
+    cur_probs = torch.tensor([1.]).to(device)
     cur_hiddens = h0
 
     for i in range(max_length):
+        if len(cur_hyps) == 0:
+            break
+
         # Get last words and prepare them as an input
         last_words = [hyp[-1].unsqueeze(0) for hyp in cur_hyps]
         packed_inputs = torch.nn.utils.rnn.pack_sequence(last_words, enforce_sorted=True)
+        packed_inputs = packed_inputs.to(device)
 
         # Use model decoder to get words probabilities and hidden states
         cur_hiddens = cur_hiddens.unsqueeze(0)
