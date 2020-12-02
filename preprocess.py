@@ -11,6 +11,7 @@ from shutil import copyfile
 import argparse
 import os
 from utils.text_utils import create_dictionary_from_annotations, transform_text, clean_text
+from tqdm import tqdm
 
 ROOT = 'data/datasets'
 ANNOTATIONS_PATH = 'annotations/captions_{0}2014.json'
@@ -48,7 +49,7 @@ def extract_split_annotations(split, train_raw, val_raw):
     for raw in [train_raw, val_raw]:
         for annotation in raw['annotations']:
             if annotation['image_id'] in split:
-                annotations.append(annotation)
+                annotations.append(annotation.copy())
 
     images = []
     for raw in [train_raw, val_raw]:
@@ -158,7 +159,7 @@ def preprocess_coco(dataset, out_dataset):
         copy_image_files(dataset, out_dataset, split_name, split_ids, train_raw, val_raw)
 
         # Preprocess images and save to hdf5 file
-        images_to_hdf5(os.path.join(ROOT, out_dataset), os.path.join(ROOT, out_dataset, IMAGES_PATH.format(split_name)), split_annotations, split_name + '.h5')
+        images_to_hdf5(os.path.join(ROOT, out_dataset), os.path.join(ROOT, out_dataset, IMAGES_PATH.format(split_name)), split_annotations['images'], split_name + '.h5')
 
         # Preprocess image features with resnet and save to hdf5 file
         images_to_embeddings(os.path.join(ROOT, out_dataset), split_name + '.h5', split_name + '_features.h5')
