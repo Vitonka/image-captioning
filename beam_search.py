@@ -14,7 +14,10 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
     final_probs = []
 
     # Calculate initial hidden state
-    h0 = model.encoder(image)
+    image_embed = model.encoder(image)
+    image_packed = torch.nn.utils.rnn.pack_sequence(image_embed.unsqueeze(0))
+    _, h0 = model.rnn(image_packed)
+    h0 = h0.squeeze(0)
 
     # Initialize start hypothesis, their probabilities and hidden states
     cur_hyps = torch.tensor([[w2i[START]]]).to(device)

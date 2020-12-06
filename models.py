@@ -1,7 +1,7 @@
 from torch import nn
 from torchvision import models
 import torchvision
-
+import torch
 
 class SimpleModel(nn.Module):
     def __init__(self, dict_size, embedding_dim, hidden_size, *args, **kwargs):
@@ -81,7 +81,7 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
         super(SimpleModelWithPreptrainedImageEmbeddings, self).__init__(*args, **kwargs)
         # TODO: try to use mean instead of flatten all the features
 #        self.linear1 = nn.Linear(in_features=100352, out_features=hidden_size)
-        self.linear1 = nn.Linear(in_features=2048, out_features=hidden_size)
+        self.linear1 = nn.Linear(in_features=2048, out_features=embedding_dim)
 
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
@@ -95,18 +95,22 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
         return self.linear1(image).view(-1, self.hidden_size)
 #        return self.linear1(image.view(image.shape[0], -1)).view(-1, self.hidden_size)
 
-    def decoder(self, image_vector, input_captions):
+    def decoder(self, hiddens, input_captions):
         embeddings = nn.utils.rnn.PackedSequence(
             self.embedding(input_captions.data),
             input_captions.batch_sizes)
-        decoded, hiddens = self.rnn(embeddings, image_vector)
+        decoded, hiddens = self.rnn(embeddings, hiddens)
         probs = self.linear2(decoded.data)
         return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
 
     def forward(self, image, input_captions):
         image_vector = self.encoder(image)
-        image_vector = image_vector.unsqueeze(0)
-        return self.decoder(image_vector, input_captions)
+
+        image_vectors = [v.unsqueeze(0) for v in image_vector]
+        image_embeddings = torch.nn.utils.rnn.pack_sequence(image_vectors)
+        _, hiddens = self.rnn(image_embeddings)
+
+        return self.decoder(hiddens, input_captions)
 
 
 class ResNetLSTM(nn.Module):
