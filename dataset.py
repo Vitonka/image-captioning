@@ -12,7 +12,7 @@ Caption = namedtuple('Caption', ['text', 'image_id'])
 class SimpleCaptionsDatasetBase():
     def __init__(self, annotations_path, hdf5_path, *args, **kwargs):
         self._h5file = h5py.File(hdf5_path, 'r')
-        self._images_data = self._h5file['images']
+        self._images_data = self._h5file['features']#self._h5file['images']
 
         with open(annotations_path) as f:
             annotations = json.load(f)
@@ -58,10 +58,15 @@ def get_coco_datasets(dataset_path):
     images_path = os.path.join(dataset_path, 'images')
     annotations_path = os.path.join(dataset_path, 'annotations')
 
+#    return (
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.h5')),
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
+
     return (
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.h5')),
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train_features.h5')),
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val_features.h5')),
+        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
 
 
 def collate_fn_train(batch):

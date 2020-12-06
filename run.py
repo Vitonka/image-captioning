@@ -11,7 +11,7 @@ from utils.text_utils import create_dictionary
 from dataset import get_coco_dataloaders
 from beam_search import beam_search
 from train import train, validate
-from models import SimpleModel, SimpleModelWithEncoder
+from models import SimpleModel, SimpleModelWithEncoder, SimpleModelWithPreptrainedImageEmbeddings
 
 DATASETS_ROOT = 'data/datasets'
 SUMMARY_WRITER_ROOT='data/runs'
@@ -41,7 +41,8 @@ if __name__ == '__main__':
 
     trainloader, valloader, _ = get_coco_dataloaders(dataset_path, config['batch_size'], 1, 1)
 
-    model = SimpleModelWithEncoder(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
+#    model = SimpleModelWithEncoder(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
+    model = SimpleModelWithPreptrainedImageEmbeddings(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
