@@ -79,21 +79,17 @@ class SimpleModelWithEncoder(nn.Module):
 class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
     def __init__(self, dict_size, embedding_dim, hidden_size, *args, **kwargs):
         super(SimpleModelWithPreptrainedImageEmbeddings, self).__init__(*args, **kwargs)
-        # TODO: try to use mean instead of flatten all the features
-#        self.linear1 = nn.Linear(in_features=100352, out_features=hidden_size)
         self.linear1 = nn.Linear(in_features=2048, out_features=embedding_dim)
 
         self.hidden_size = hidden_size
+        self.embedding_dim = embedding_dim
         self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
         self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size, nonlinearity='relu')
         self.linear2 = nn.Linear(in_features=hidden_size, out_features=dict_size)
 
-        self._eval_mode = False
-
     def encoder(self, image):
         image = image.mean(dim=(2, 3))
-        return self.linear1(image).view(-1, self.hidden_size)
-#        return self.linear1(image.view(image.shape[0], -1)).view(-1, self.hidden_size)
+        return self.linear1(image).view(-1, self.embedding_dim)
 
     def decoder(self, hiddens, input_captions):
         embeddings = nn.utils.rnn.PackedSequence(
