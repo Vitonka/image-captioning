@@ -47,6 +47,7 @@ class SimpleModelWithEncoder(nn.Module):
         super(SimpleModelWithEncoder, self).__init__(*args, **kwargs)
 
         resnet = torchvision.models.resnet101(pretrained=True)
+        resnet.eval()
         modules = list(resnet.children())[:-2]
         self.resnet = nn.Sequential(*modules)
         for param in self.resnet.parameters():
@@ -84,11 +85,10 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
         self.hidden_size = hidden_size
         self.embedding_dim = embedding_dim
         self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
-        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size, nonlinearity='relu')
+        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size)
         self.linear2 = nn.Linear(in_features=hidden_size, out_features=dict_size)
 
     def encoder(self, image):
-        image = image.mean(dim=(2, 3))
         return self.linear1(image).view(-1, self.embedding_dim)
 
     def decoder(self, hiddens, input_captions):

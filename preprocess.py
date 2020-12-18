@@ -57,6 +57,12 @@ def extract_split_annotations(split, train_raw, val_raw):
             if image['id'] in split:
                 images.append(image)
 
+    images.sort(key=lambda x: x['id'])
+    id_to_idx = {}
+    for i, image in enumerate(images):
+        id_to_idx[image['id']] = i
+    for annotation in annotations:
+        annotation['idx'] = id_to_idx[annotation['image_id']]
     split_annotations['annotations'] = annotations
     split_annotations['images'] = images
     return split_annotations
@@ -91,6 +97,7 @@ def images_to_embeddings(dataset_folder, h5_images, out_filename):
         out_file = h5py.File(os.path.join(dataset_folder, out_filename), 'w')
         data = out_file.create_dataset('features', shape=(len(f['images']), 2048, 7, 7), dtype=np.float32, fillvalue=0)
         resnet = torchvision.models.resnet101(pretrained=True)
+        resnet.eval()
         modules = list(resnet.children())[:-2]
         resnet = nn.Sequential(*modules)
         resnet.to(device)
@@ -102,6 +109,32 @@ def images_to_embeddings(dataset_folder, h5_images, out_filename):
             data[i] = temp[0].cpu().detach().numpy()
 
         out_file.close()
+
+def images_features_to_npy(images_folder, images, out_filename):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    images_sorted = sorted(images, key=lambda x: x['id'])
+    assert images_sorted == images
+
+    resnet = torchvision.models.resnet101(pretrained=True)
+    resnet.eval()
+    modules = list(resnet.children())[:-1]
+    resnet = nn.Sequential(*modules)
+    for param in resnet.parameters():
+        param.requires_grad = False
+    resnet.to(device)
+
+    all_features = []
+    for image in tqdm(images):
+        img = Image.open(os.path.join(images_folder, image['file_name'])).convert('RGB')
+        img = IMAGE_TRANSFORM(img)
+        img = img.unsqueeze(0)
+        img = img.to(device)
+        temp = resnet(img)
+        all_features.append(temp[0].squeeze(-1).squeeze(-1).cpu().detach().numpy())
+
+    np.save(out_filename, np.array(all_features))
+
 
 def transform_annotations(annotations, w2i):
     transformed_annotations = []
@@ -163,6 +196,9 @@ def preprocess_coco(dataset, out_dataset):
 
         # Preprocess image features with resnet and save to hdf5 file
         images_to_embeddings(os.path.join(ROOT, out_dataset), split_name + '.h5', split_name + '_features.h5')
+
+        # Preprocess images features and save to npy file
+        images_features_to_npy(os.path.join(ROOT, 'coco', IMAGES_PATH.format(split_name)), split_annotations['images'], os.path.join(ROOT, out_dataset, split_name))
 
     # Save dictionary
     with open(os.path.join(ROOT, out_dataset, 'w2i.json'), 'w') as f:

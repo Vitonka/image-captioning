@@ -37,6 +37,8 @@ def validate(model, dataloader, device, w2i, i2w, max_length=15, beam_size=3):
             hyp = hyp[:-1]
         hyp = ' '.join([i2w[word] for word in hyp.tolist()])
         gts_dict[i] = texts[0]
+        # Temporary
+        gts_dict[i] = ' '.join([i2w[idx.item()] for idx in gts_dict[i]])
         hyps_dict[i] = [hyp]
     if len(list(gts_dict.keys())) == 0:
         print('Bad validation')

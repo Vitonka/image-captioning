@@ -6,6 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import torch
 from PIL import Image
+import numpy as np
+import random
 
 Caption = namedtuple('Caption', ['text', 'image_id'])
 
@@ -54,6 +56,30 @@ class SimpleCaptionsDatasetByImage(SimpleCaptionsDatasetBase, Dataset):
         image_id = self._image_ids[idx]
         return (torch.from_numpy(self._images_data[idx]), [self._captions[i].text for i in self._image_id_to_captions[image_id]])
 
+class NumpyRandomCaptionByImageDataset(Dataset):
+    def __init__(self):
+        self._img_codes = np.load('data/datasets/coco_fixed/train.npy')
+        annotations = json.load(open('data/datasets/coco_fixed/annotations/captions_train2014.json'))
+
+        self._captions = defaultdict(list)
+
+        for annotation in annotations['annotations']:
+            idx = annotation['idx']
+            self._captions[idx].append(annotation['caption'])
+
+    def __len__(self):
+        return len(self._img_codes)
+
+    def __getitem__(self, idx):
+        #get images
+        image = self._img_codes[idx]
+
+        #5-7 captions for each image
+        captions_for_image = self._captions[idx]
+        caption = random.choice(captions_for_image)
+
+        return torch.tensor(image, dtype=torch.float32), torch.tensor(caption, dtype=torch.int64)
+
 def get_coco_datasets(dataset_path):
     images_path = os.path.join(dataset_path, 'images')
     annotations_path = os.path.join(dataset_path, 'annotations')
@@ -63,17 +89,27 @@ def get_coco_datasets(dataset_path):
 #        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.h5')),
 #        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.h5')))
 
+#    return (
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train_features.h5')),
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val_features.h5')),
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
+
+#    return (
+#        SimpleCaptionsDatasetByCaption(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train_features.h5')),
+#        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val_features.h5')),
+#        SimpleCaptionsDatasetByCaption(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
+
     return (
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train_features.h5')),
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val_features.h5')),
-        SimpleCaptionsDatasetByImage(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
+        NumpyRandomCaptionByImageDataset(),
+        NumpyRandomCaptionByImageDataset(),
+        NumpyRandomCaptionByImageDataset())
 
 
 def collate_fn_train(batch):
     images_list = []
     texts_list = []
     for image, texts in batch:
-        if not isinstance(texts, list):
+        if not isinstance(texts[0], list):
             texts = [texts]
         for text in texts:
             images_list.append(image)
