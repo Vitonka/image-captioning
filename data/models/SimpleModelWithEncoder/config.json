@@ -1,5 +1,6 @@
 {
   "dataset_name": "coco_fixed",
+  "data_mode": "packed",
   "min_word_freq": 0,
   "batch_size": 50,
   "max_length": 15,

@@ -27,6 +27,8 @@ if __name__ == '__main__':
     with open(args.config) as f:
         config = json.load(f)
 
+    assert config['data_mode'] == 'packed' or config['data_mode'] == 'padded'
+
     # Set up device for training
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -38,14 +40,22 @@ if __name__ == '__main__':
     with open(os.path.join(dataset_path, 'i2w.json')) as f:
         i2w = json.load(f)
         i2w = {int(i): i2w[i] for i in i2w}
+    # TODO(vitonka): move to a dict creation
+    w2i['<PAD>'] = len(w2i)
+    i2w[len(w2i) - 1] = '<PAD>'
 
-    trainloader, valloader, _ = get_coco_dataloaders(dataset_path, config['batch_size'], 1, 1)
+    trainloader, valloader, _ = get_coco_dataloaders(dataset_path, config['batch_size'], 1, 1, config['data_mode'])
 
 #    model = SimpleModelWithEncoder(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
-    model = SimpleModelWithPreptrainedImageEmbeddings(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
+    model = SimpleModelWithPreptrainedImageEmbeddings(
+        dict_size=len(w2i),
+        embedding_dim=config['embedding_dim'],
+        hidden_size=config['hidden_size'],
+        data_mode=config['data_mode'],
+        pad_idx=w2i['<PAD>'])
     model.to(device)
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=w2i['<PAD>'])
     optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad ], lr=config['optimizer_learning_rate'])
 
     MODEL_DIR = os.path.join(MODEL_ROOT, config['model_name'])

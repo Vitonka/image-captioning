@@ -153,9 +153,16 @@ def collate_fn_train_padded(batch):
 
     return torch.stack(images_list), torch.stack(inputs), torch.stack(outputs)
 
-def get_coco_dataloaders(dataset_path, train_bs, val_bs, test_bs):
+def get_coco_dataloaders(dataset_path, train_bs, val_bs, test_bs, data_mode):
+    assert data_mode is 'packed' or data_mode is 'padded'
     train_dataset, val_dataset, test_dataset = get_coco_datasets(dataset_path)
+
+    if data_mode == 'packed':
+        collate_fn_train = collate_fn_train_packed
+    elif data_mode == 'padded':
+        collate_fn_train = collate_fn_train_padded
+
     return (
-        DataLoader(train_dataset, batch_size=train_bs, shuffle=True, collate_fn=collate_fn_train_packed),
+        DataLoader(train_dataset, batch_size=train_bs, shuffle=True, collate_fn=collate_fn_train),
         DataLoader(val_dataset, batch_size=val_bs, shuffle=False, collate_fn=collate_fn_test),
         DataLoader(test_dataset, batch_size=test_bs, shuffle=False, collate_fn=collate_fn_test))
