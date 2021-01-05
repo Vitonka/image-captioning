@@ -46,7 +46,7 @@ class SimpleModelWithEncoder(nn.Module):
     def __init__(self, dict_size, embedding_dim, hidden_size, data_mode, *args, **kwargs):
         super(SimpleModelWithEncoder, self).__init__(*args, **kwargs)
 
-        assert data_mode is 'packed' or data_mode is 'padded'
+        assert data_mode == 'packed' or data_mode == 'padded'
         self._data_mode = data_mode
 
         resnet = torchvision.models.resnet101(pretrained=True)
@@ -69,14 +69,14 @@ class SimpleModelWithEncoder(nn.Module):
         return self.linear1(image)
 
     def decoder(self, image_vector, input_captions):
-        if self._data_mode is 'padded':
+        if self._data_mode == 'padded':
             embeddings = nn.utils.rnn.PackedSequence(
                 self.embedding(input_captions.data),
                 input_captions.batch_sizes)
             decoded, hiddens = self.rnn(embeddings, image_vector)
             probs = self.linear2(decoded.data)
             return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
-        elif self._data_mode is 'packed':
+        elif self._data_mode == 'packed':
             embeddings = self.embedding(input_captions)
             embeddings = torch.cat([image_vector, embeddings], dim=1)
             decoded, hiddens = self.rnn(embeddings)
@@ -92,18 +92,18 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
     def __init__(self, dict_size, embedding_dim, hidden_size, data_mode, pad_idx=None, *args, **kwargs):
         super(SimpleModelWithPreptrainedImageEmbeddings, self).__init__(*args, **kwargs)
 
-        assert data_mode is 'packed' or data_mode is 'padded'
+        assert data_mode == 'packed' or data_mode == 'padded'
         self._data_mode = data_mode
-        if self._data_mode is 'padded':
+        if self._data_mode == 'padded':
             assert pad_idx is not None
 
         self.linear1 = nn.Linear(in_features=2048, out_features=embedding_dim)
 
         self.hidden_size = hidden_size
         self.embedding_dim = embedding_dim
-        if self._data_mode is 'packed':
+        if self._data_mode == 'packed':
             self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
-        elif self._data_mode is 'padded':
+        elif self._data_mode == 'padded':
             self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim, padding_idx=pad_idx)
         self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size)
         self.linear2 = nn.Linear(in_features=hidden_size, out_features=dict_size)

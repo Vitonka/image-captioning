@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 
 def train(model, dataloader, criterion, optimizer, device, data_mode):
-    assert data_mode is 'packed' or data_mode is 'padded'
+    assert data_mode == 'packed' or data_mode == 'padded'
 
     total_loss = 0.0
     total_samples = 0
@@ -18,10 +18,10 @@ def train(model, dataloader, criterion, optimizer, device, data_mode):
 
         ans, _ = model(image, inputs)
 
-        if data_mode is 'packed':
+        if data_mode == 'packed':
             ans = ans.data
             outputs = outputs.data
-        elif data_mode is 'padded':
+        elif data_mode == 'padded':
             ans = ans.view(-1, ans.shape[-1])
             outputs = outputs.view(-1)
 
