@@ -4,7 +4,10 @@ import numpy as np
 from utils.text_utils import START, END
 
 
-def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
+def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, mode='packed'):
+    # Run only in known mode
+    assert mode is 'packed' or mode is 'padded'
+
     # Move model and image to the same device
     model = model.to(device)
     image = image.to(device)
@@ -14,9 +17,12 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
     final_probs = []
 
     # Calculate initial hidden state
-    image_embed = model.encoder(image)
-    image_packed = torch.nn.utils.rnn.pack_sequence(image_embed.unsqueeze(0))
-    _, h0 = model.rnn(image_packed)
+    image_embed = model.encoder(image).unsqueeze(0)
+    if mode is 'packed':
+        image_embed = torch.nn.utils.rnn.pack_sequence(image_embed)
+    elif mode is 'padded':
+        pass
+    _, h0 = model.rnn(image_embed)
     h0 = h0.squeeze(0)
 
     # Initialize start hypothesis, their probabilities and hidden states
@@ -30,14 +36,20 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1):
 
         # Get last words and prepare them as an input
         last_words = [hyp[-1].unsqueeze(0) for hyp in cur_hyps]
-        packed_inputs = torch.nn.utils.rnn.pack_sequence(last_words, enforce_sorted=True)
-        packed_inputs = packed_inputs.to(device)
+        if mode is 'packed':
+            cur_inputs = torch.nn.utils.rnn.pack_sequence(last_words, enforce_sorted=True)
+        elif mode is 'padded':
+            cur_inputs = torch.stack(last_words)
+        cur_inputs = cur_inputs.to(device)
 
         # Use model decoder to get words probabilities and hidden states
         cur_hiddens = cur_hiddens.unsqueeze(0)
-        words_probs, hiddens = model.decoder(cur_hiddens, packed_inputs)
+        words_probs, hiddens = model.decoder(cur_hiddens, cur_inputs)
 
-        words_probs, _ = torch.nn.utils.rnn.pad_packed_sequence(words_probs)
+        if mode is 'packed':
+            words_probs, _ = torch.nn.utils.rnn.pad_packed_sequence(words_probs)
+        elif mode is 'padded':
+            pass
         words_probs, hiddens = words_probs.squeeze(0), hiddens.squeeze(0)
         # TEMP WHILE MODEL DON'T HAVE SOFTMAX
         words_probs = torch.nn.Softmax(dim=1)(words_probs)
