@@ -105,7 +105,7 @@ def get_coco_datasets(dataset_path):
         NumpyRandomCaptionByImageDataset())
 
 
-def collate_fn_train(batch):
+def collate_fn_train_packed(batch):
     images_list = []
     texts_list = []
     for image, texts in batch:
@@ -134,9 +134,28 @@ def collate_fn_test(batch):
 
     return torch.stack(images_list), texts_list
 
+def collate_fn_train_padded(batch):
+    images_list = []
+    texts_list = []
+    max_len = 0
+    for image, text in batch:
+        images_list.append(image)
+        texts_list.append(text)
+        max_len = max(max_len, len(text))
+    texts_tensors = []
+    for text in texts_list:
+        matrix = np.zeros(max_len, dtype='int64') + 16423
+        matrix[0:len(text)] = text
+        texts_tensors.append(torch.tensor(matrix))
+
+    inputs = [text[:-1] for text in texts_tensors]
+    outputs = [text[1:] for text in texts_tensors]
+
+    return torch.stack(images_list), torch.stack(inputs), torch.stack(outputs)
+
 def get_coco_dataloaders(dataset_path, train_bs, val_bs, test_bs):
     train_dataset, val_dataset, test_dataset = get_coco_datasets(dataset_path)
     return (
-        DataLoader(train_dataset, batch_size=train_bs, shuffle=True, collate_fn=collate_fn_train),
+        DataLoader(train_dataset, batch_size=train_bs, shuffle=True, collate_fn=collate_fn_train_packed),
         DataLoader(val_dataset, batch_size=val_bs, shuffle=False, collate_fn=collate_fn_test),
         DataLoader(test_dataset, batch_size=test_bs, shuffle=False, collate_fn=collate_fn_test))
