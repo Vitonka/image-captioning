@@ -3,7 +3,9 @@ from beam_search import beam_search
 from tqdm import tqdm
 
 
-def train(model, dataloader, criterion, optimizer, device):
+def train(model, dataloader, criterion, optimizer, device, data_mode):
+    assert data_mode is 'packed' or data_mode is 'padded'
+
     total_loss = 0.0
     total_samples = 0
     for image, inputs, outputs in tqdm(dataloader, total=len(dataloader)):
@@ -15,7 +17,15 @@ def train(model, dataloader, criterion, optimizer, device):
         optimizer.zero_grad()
 
         ans, _ = model(image, inputs)
-        loss = criterion(ans.data, outputs.data)
+
+        if data_mode is 'packed':
+            ans = ans.data
+            outputs = outputs.data
+        elif data_mode is 'padded':
+            ans = ans.view(-1, ans.shape[-1])
+            outputs = outputs.view(-1)
+
+        loss = criterion(ans, outputs)
         loss.backward()
         optimizer.step()
         total_loss += loss.item() * image.shape[0]

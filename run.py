@@ -69,7 +69,7 @@ if __name__ == '__main__':
         print('Epoch: ', epoch)
 
         print('Train')
-        loss = train(model, trainloader, criterion, optimizer, device)
+        loss = train(model, trainloader, criterion, optimizer, device, config['data_mode'])
 
         torch.save(model.state_dict(), MODEL_PATH)
 
