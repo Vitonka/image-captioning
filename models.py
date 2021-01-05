@@ -43,17 +43,20 @@ class SimpleModel(nn.Module):
 
 
 class SimpleModelWithEncoder(nn.Module):
-    def __init__(self, dict_size, embedding_dim, hidden_size, *args, **kwargs):
+    def __init__(self, dict_size, embedding_dim, hidden_size, data_mode, *args, **kwargs):
         super(SimpleModelWithEncoder, self).__init__(*args, **kwargs)
+
+        assert data_mode is 'packed' or data_mode is 'padded'
+        self._data_mode = data_mode
 
         resnet = torchvision.models.resnet101(pretrained=True)
         resnet.eval()
-        modules = list(resnet.children())[:-2]
+        modules = list(resnet.children())[:-1]
         self.resnet = nn.Sequential(*modules)
         for param in self.resnet.parameters():
             param.requires_grad = False
         # TODO: try to use mean instead of flatten all the features
-        self.linear1 = nn.Linear(in_features=100352, out_features=hidden_size)
+        self.linear1 = nn.Linear(in_features=list(resnet.children())[-1].in_features, out_features=hidden_size)
 
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
@@ -62,15 +65,23 @@ class SimpleModelWithEncoder(nn.Module):
 
     def encoder(self, image):
         image = self.resnet(image)
-        return self.linear1(image.view(image.shape[0], -1)).view(-1, self.hidden_size)
+        image = image.squeeze(-1).squeeze(-1)
+        return self.linear1(image)
 
     def decoder(self, image_vector, input_captions):
-        embeddings = nn.utils.rnn.PackedSequence(
-            self.embedding(input_captions.data),
-            input_captions.batch_sizes)
-        decoded, hiddens = self.rnn(embeddings, image_vector)
-        probs = self.linear2(decoded.data)
-        return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
+        if self._data_mode is 'padded':
+            embeddings = nn.utils.rnn.PackedSequence(
+                self.embedding(input_captions.data),
+                input_captions.batch_sizes)
+            decoded, hiddens = self.rnn(embeddings, image_vector)
+            probs = self.linear2(decoded.data)
+            return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
+        elif self._data_mode is 'packed':
+            embeddings = self.embedding(input_captions)
+            embeddings = torch.cat([image_vector, embeddings], dim=1)
+            decoded, hiddens = self.rnn(embeddings)
+            probs = self.linear2(decoded)
+            return probs, hiddens
 
     def forward(self, image, input_captions):
         image_vector = self.encoder(image)
@@ -78,33 +89,52 @@ class SimpleModelWithEncoder(nn.Module):
         return self.decoder(image_vector, input_captions)
 
 class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
-    def __init__(self, dict_size, embedding_dim, hidden_size, *args, **kwargs):
+    def __init__(self, dict_size, embedding_dim, hidden_size, data_mode, pad_idx=None, *args, **kwargs):
         super(SimpleModelWithPreptrainedImageEmbeddings, self).__init__(*args, **kwargs)
+
+        assert data_mode is 'packed' or data_mode is 'padded'
+        self._data_mode = data_mode
+        if self._data_mode is 'padded':
+            assert pad_idx is not None
+
         self.linear1 = nn.Linear(in_features=2048, out_features=embedding_dim)
 
         self.hidden_size = hidden_size
         self.embedding_dim = embedding_dim
-        self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
+        if self._data_mode is 'packed':
+            self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
+        elif self._data_mode is 'padded':
+            self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim, padding_idx=pad_idx)
         self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size)
         self.linear2 = nn.Linear(in_features=hidden_size, out_features=dict_size)
 
     def encoder(self, image):
-        return self.linear1(image).view(-1, self.embedding_dim)
+        return self.linear1(image)
 
     def decoder(self, hiddens, input_captions):
-        embeddings = nn.utils.rnn.PackedSequence(
-            self.embedding(input_captions.data),
-            input_captions.batch_sizes)
+        if self._data_mode == 'packed':
+            embeddings = nn.utils.rnn.PackedSequence(
+                self.embedding(input_captions.data),
+                input_captions.batch_sizes)
+        elif self._data_mode == 'padded':
+            embeddings = self.embeddings(input_captions)
         decoded, hiddens = self.rnn(embeddings, hiddens)
-        probs = self.linear2(decoded.data)
-        return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
+        if self._data_mode == 'packed':
+            probs = self.linear2(decoded.data)
+            return nn.utils.rnn.PackedSequence(probs, decoded.batch_sizes), hiddens
+        elif self._data_mode == 'padded':
+            probs = self.linear2(decoded)
+            return probs, hiddens
 
     def forward(self, image, input_captions):
         image_vector = self.encoder(image)
 
-        image_vectors = [v.unsqueeze(0) for v in image_vector]
-        image_embeddings = torch.nn.utils.rnn.pack_sequence(image_vectors)
-        _, hiddens = self.rnn(image_embeddings)
+        if self._data_mode == 'packed':
+            image_vectors = [v.unsqueeze(0) for v in image_vector]
+            image_embeddings = torch.nn.utils.rnn.pack_sequence(image_vectors)
+            _, hiddens = self.rnn(image_embeddings)
+        elif self._data_mode == 'padded':
+            _, hiddens = self.rnn(image_vector.unsqueeze(1))
 
         return self.decoder(hiddens, input_captions)
 
