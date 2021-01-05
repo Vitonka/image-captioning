@@ -57,9 +57,9 @@ class SimpleCaptionsDatasetByImage(SimpleCaptionsDatasetBase, Dataset):
         return (torch.from_numpy(self._images_data[idx]), [self._captions[i].text for i in self._image_id_to_captions[image_id]])
 
 class NumpyRandomCaptionByImageDataset(Dataset):
-    def __init__(self):
-        self._img_codes = np.load('data/datasets/coco_fixed/train.npy')
-        annotations = json.load(open('data/datasets/coco_fixed/annotations/captions_train2014.json'))
+    def __init__(self, annotations_path, npy_path):
+        self._img_codes = np.load(npy_path)
+        annotations = json.load(open(annotations_path))
 
         self._captions = defaultdict(list)
 
@@ -79,6 +79,23 @@ class NumpyRandomCaptionByImageDataset(Dataset):
         caption = random.choice(captions_for_image)
 
         return torch.tensor(image, dtype=torch.float32), torch.tensor(caption, dtype=torch.int64)
+
+class NumpyCaptionsByImageDataset(Dataset):
+    def __init__(self, annotations_path, npy_path):
+        self._img_codes = np.load(npy_path)
+        annotations = json.load(open(annotations_path))
+
+        self._captions = defaultdict(list)
+
+        for annotation in annotations['annotations']:
+            idx = annotation['idx']
+            self._captions[idx].append(annotation['caption'])
+
+    def __len__(self):
+        return len(self._img_codes)
+
+    def __getitem__(self, idx):
+        return torch.tensor(self._img_codes[idx], dtype=torch.float32), self._captions[idx]
 
 def get_coco_datasets(dataset_path):
     images_path = os.path.join(dataset_path, 'images')
@@ -100,9 +117,9 @@ def get_coco_datasets(dataset_path):
 #        SimpleCaptionsDatasetByCaption(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
 
     return (
-        NumpyRandomCaptionByImageDataset(),
-        NumpyRandomCaptionByImageDataset(),
-        NumpyRandomCaptionByImageDataset())
+        NumpyRandomCaptionByImageDataset(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.npy')),
+        NumpyCaptionsByImageDataset(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.npy')),
+        NumpyCaptionsByImageDataset(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.npy')))
 
 
 def collate_fn_train_packed(batch):
