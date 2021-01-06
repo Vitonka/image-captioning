@@ -4,9 +4,9 @@ import numpy as np
 from utils.text_utils import START, END
 
 
-def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, mode='packed'):
+def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, data_mode='packed'):
     # Run only in known mode
-    assert mode is 'packed' or mode is 'padded'
+    assert data_mode == 'packed' or data_mode == 'padded'
 
     # Move model and image to the same device
     model = model.to(device)
@@ -18,9 +18,9 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, mode
 
     # Calculate initial hidden state
     image_embed = model.encoder(image).unsqueeze(0)
-    if mode is 'packed':
+    if data_mode == 'packed':
         image_embed = torch.nn.utils.rnn.pack_sequence(image_embed)
-    elif mode is 'padded':
+    elif data_mode == 'padded':
         pass
     _, h0 = model.rnn(image_embed)
     h0 = h0.squeeze(0)
@@ -36,9 +36,9 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, mode
 
         # Get last words and prepare them as an input
         last_words = [hyp[-1].unsqueeze(0) for hyp in cur_hyps]
-        if mode is 'packed':
+        if data_mode == 'packed':
             cur_inputs = torch.nn.utils.rnn.pack_sequence(last_words, enforce_sorted=True)
-        elif mode is 'padded':
+        elif data_mode == 'padded':
             cur_inputs = torch.stack(last_words)
         cur_inputs = cur_inputs.to(device)
 
@@ -46,12 +46,11 @@ def beam_search(model, image, w2i, i2w, device, max_length=15, beam_size=1, mode
         cur_hiddens = cur_hiddens.unsqueeze(0)
         words_probs, hiddens = model.decoder(cur_hiddens, cur_inputs)
 
-        if mode is 'packed':
-            words_probs, _ = torch.nn.utils.rnn.pad_packed_sequence(words_probs)
-        elif mode is 'padded':
+        if data_mode == 'packed':
+            words_probs, _ = torch.nn.utils.rnn.pad_packed_sequence(words_probs, batch_first=True)
+        elif data_mode == 'padded':
             pass
-        words_probs, hiddens = words_probs.squeeze(0), hiddens.squeeze(0)
-        # TEMP WHILE MODEL DON'T HAVE SOFTMAX
+        words_probs, hiddens = words_probs.squeeze(1), hiddens.squeeze(0)
         words_probs = torch.nn.Softmax(dim=1)(words_probs)
 
         # Determine the most probable words for each hypothesis

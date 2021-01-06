@@ -130,7 +130,7 @@ def collate_fn_train_packed(batch):
             texts = [texts]
         for text in texts:
             images_list.append(image)
-            texts_list.append(torch.tensor(text))
+            texts_list.append(text)
 
     images_list, texts_list = \
         list(zip(*sorted(zip(images_list, texts_list), key=lambda x: x[1].shape[0], reverse=True)))

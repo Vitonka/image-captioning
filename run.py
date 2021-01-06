@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
         with torch.no_grad():
             print('Validate')
-            scores = validate(model, valloader, device, w2i, i2w)
+            scores = validate(model, valloader, device, w2i, i2w, config['data_mode'])
 
         writer.add_scalar('loss', loss, epoch)
         for score_name in scores:

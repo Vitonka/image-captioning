@@ -105,7 +105,7 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
             self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim)
         elif self._data_mode == 'padded':
             self.embedding = nn.Embedding(num_embeddings=dict_size, embedding_dim=embedding_dim, padding_idx=pad_idx)
-        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size)
+        self.rnn = nn.RNN(input_size=embedding_dim, hidden_size=hidden_size, batch_first=True)
         self.linear2 = nn.Linear(in_features=hidden_size, out_features=dict_size)
 
     def encoder(self, image):
@@ -117,7 +117,7 @@ class SimpleModelWithPreptrainedImageEmbeddings(nn.Module):
                 self.embedding(input_captions.data),
                 input_captions.batch_sizes)
         elif self._data_mode == 'padded':
-            embeddings = self.embeddings(input_captions)
+            embeddings = self.embedding(input_captions)
         decoded, hiddens = self.rnn(embeddings, hiddens)
         if self._data_mode == 'packed':
             probs = self.linear2(decoded.data)
