@@ -16,7 +16,7 @@ My PhD studies on the image captioning topic.
   publisher={Multidisciplinary Digital Publishing Institute}
 }
 ```
----
+
 [Comparison of VGG and ResNet used as Encoders for Image Captioning](https://yadi.sk/d/szPwZTUt9XVqnw)
 
 ```
