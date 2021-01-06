@@ -1,18 +1,34 @@
-# image-captioning
-My PhD studies on the image captioning topic
+# Image Captioning
+My PhD studies on the image captioning topic.
 
-Useful links:
-[Data format](https://cocodataset.org/#format-data)
-[Data download](https://cocodataset.org/#download)
-[Data download instruction](https://gist.github.com/mkocabas/a6177fc00315403d31572e17700d7fd9)
+## Publications
+[Text Augmentation Using BERT for Image Captioning](https://www.mdpi.com/2076-3417/10/17/5978/pdf)
 
-Notes about project structure:
-[Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/)
-[How to plan and execute your ML and DL projects](https://blog.floydhub.com/structuring-and-planning-your-machine-learning-project/)
+```
+@article{atliha2020text,
+  title={Text Augmentation Using BERT for Image Captioning},
+  author={Atliha, Viktar and {\v{S}}e{\v{s}}ok, Dmitrij},
+  journal={Applied Sciences},
+  volume={10},
+  number={17},
+  pages={5978},
+  year={2020},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+```
+---
+[Comparison of VGG and ResNet used as Encoders for Image Captioning](https://yadi.sk/d/szPwZTUt9XVqnw)
 
-Заметки на полях:
-* импортировать Python модули из git submodule как-то нетривиально...
-* если скачать файл с аннотациями с [официального сайта COCO](https://cocodataset.org/#download), то используя что API из документации, что [официальный пакет](https://github.com/cocodataset/cocoapi) для чтения (и более продвинутый [неофициальный](https://github.com/ruotianluo/coco-caption), мы получаем ошибку. Судя по всему, формат файла какой-то неправильный. Поэтому хоть такого я нигде и не видел, попробуем заиспользовать [реализацию из PyTorch](https://pytorch.org/docs/stable/torchvision/datasets.html#captions).
+```
+@inproceedings{atliha2020comparison,
+  title={Comparison of VGG and ResNet used as Encoders for Image Captioning},
+  author={Atliha, Viktar and {\v{S}}e{\v{s}}ok, Dmitrij},
+  booktitle={2020 IEEE Open Conference of Electrical, Electronic and Information Sciences (eStream)},
+  pages={1--4},
+  year={2020},
+  organization={IEEE}
+}
+```
 
-TODO (опционально):
-* загрузка картинок в tensorboard
+## Acknowledgements
+The repository structure is inspired by [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/) and [How to plan and execute your ML and DL projects](https://blog.floydhub.com/structuring-and-planning-your-machine-learning-project/) articles.
