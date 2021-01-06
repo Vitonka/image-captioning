@@ -13,9 +13,9 @@ from beam_search import beam_search
 from train import train, validate
 from models import SimpleModel, SimpleModelWithEncoder, SimpleModelWithPreptrainedImageEmbeddings
 
-DATASETS_ROOT = 'data/datasets'
-SUMMARY_WRITER_ROOT='data/runs'
-MODEL_ROOT = 'data/models'
+DATASETS_ROOT = '../datasets'
+SUMMARY_WRITER_ROOT='../training_logs'
+MODEL_ROOT = '../models'
 MODEL_FILE = 'model.pth'
 
 if __name__ == '__main__':
