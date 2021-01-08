@@ -5,6 +5,7 @@ from collections import defaultdict
 START = '<START>'
 UNK = '<UNK>'
 END = '<END>'
+PAD = '<PAD>'
 
 
 def clean_text(text):
@@ -38,6 +39,7 @@ def create_dictionary(dataset, min_word_freq=1):
     c_filtered.append(START)
     c_filtered.append(UNK)
     c_filtered.append(END)
+    c_filtered.append(PAD)
 
     i2w = {}
     w2i = {}
@@ -61,6 +63,7 @@ def create_dictionary_from_annotations(annotations, min_word_freq=1):
     c_filtered.append(START)
     c_filtered.append(UNK)
     c_filtered.append(END)
+    c_filtered.append(PAD)
 
     i2w = {}
     w2i = {}
