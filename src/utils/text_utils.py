@@ -1,16 +1,17 @@
 from nltk.tokenize import word_tokenize
 import string
 from collections import defaultdict
-import nltk
 
 START = '<START>'
 UNK = '<UNK>'
 END = '<END>'
 
+
 def clean_text(text):
     text = text.translate(str.maketrans('', '', string.punctuation))
     text = text.lower()
     return word_tokenize(text)
+
 
 def transform_text(text, w2i):
     text = clean_text(text)

@@ -1,5 +1,6 @@
 import requests
 
+
 def download_from_url(url, path):
     """Download file, with logic (from tensor2tensor) for Google Drive"""
     if 'drive.google.com' not in url:
