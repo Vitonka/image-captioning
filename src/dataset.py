@@ -3,13 +3,12 @@ import json
 import h5py
 from collections import namedtuple, defaultdict
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
 import torch
-from PIL import Image
 import numpy as np
 import random
 
 Caption = namedtuple('Caption', ['text', 'image_id'])
+
 
 class SimpleCaptionsDatasetBase():
     def __init__(self, annotations_path, hdf5_path, *args, **kwargs):
@@ -31,30 +30,40 @@ class SimpleCaptionsDatasetBase():
         self._captions = []
         self._image_id_to_captions = defaultdict(list)
         for annotation in annotations['annotations']:
-            self._image_id_to_captions[annotation['image_id']].append(len(self._captions))
-            self._captions.append(Caption(text=annotation['caption'], image_id=annotation['image_id']))
+            self._image_id_to_captions[annotation['image_id']].append(
+                len(self._captions))
+            self._captions.append(
+                Caption(
+                    text=annotation['caption'],
+                    image_id=annotation['image_id']))
+
 
 class SimpleCaptionsDatasetByCaption(SimpleCaptionsDatasetBase, Dataset):
     def __init__(self, *args, **kwargs):
-        super(SimpleCaptionsDatasetByCaption, self).__init__(*args,**kwargs)
+        super(SimpleCaptionsDatasetByCaption, self).__init__(*args, **kwargs)
 
     def __len__(self):
         return len(self._captions)
 
     def __getitem__(self, idx):
         image_idx = self._image_id_to_idx[self._captions[idx].image_id]
-        return (torch.from_numpy(self._images_data[image_idx]), self._captions[idx].text)
+        return (torch.from_numpy(self._images_data[image_idx]),
+                self._captions[idx].text)
+
 
 class SimpleCaptionsDatasetByImage(SimpleCaptionsDatasetBase, Dataset):
     def __init__(self, *args, **kwargs):
-        super(SimpleCaptionsDatasetByImage, self).__init__(*args,**kwargs)
+        super(SimpleCaptionsDatasetByImage, self).__init__(*args, **kwargs)
 
     def __len__(self):
         return len(self._image_ids)
 
     def __getitem__(self, idx):
         image_id = self._image_ids[idx]
-        return (torch.from_numpy(self._images_data[idx]), [self._captions[i].text for i in self._image_id_to_captions[image_id]])
+        return (torch.from_numpy(self._images_data[idx]),
+                [self._captions[i].text
+                 for i in self._image_id_to_captions[image_id]])
+
 
 class NumpyRandomCaptionByImageDataset(Dataset):
     def __init__(self, annotations_path, npy_path):
@@ -71,14 +80,16 @@ class NumpyRandomCaptionByImageDataset(Dataset):
         return len(self._img_codes)
 
     def __getitem__(self, idx):
-        #get images
+        # get images
         image = self._img_codes[idx]
 
-        #5-7 captions for each image
+        # 5-7 captions for each image
         captions_for_image = self._captions[idx]
         caption = random.choice(captions_for_image)
 
-        return torch.tensor(image, dtype=torch.float32), torch.tensor(caption, dtype=torch.int64)
+        return torch.tensor(image, dtype=torch.float32), \
+            torch.tensor(caption, dtype=torch.int64)
+
 
 class NumpyCaptionsByImageDataset(Dataset):
     def __init__(self, annotations_path, npy_path):
@@ -95,10 +106,11 @@ class NumpyCaptionsByImageDataset(Dataset):
         return len(self._img_codes)
 
     def __getitem__(self, idx):
-        return torch.tensor(self._img_codes[idx], dtype=torch.float32), self._captions[idx]
+        return torch.tensor(self._img_codes[idx], dtype=torch.float32), \
+            self._captions[idx]
+
 
 def get_coco_datasets(dataset_path):
-    images_path = os.path.join(dataset_path, 'images')
     annotations_path = os.path.join(dataset_path, 'annotations')
 
 #    return (
@@ -117,9 +129,15 @@ def get_coco_datasets(dataset_path):
 #        SimpleCaptionsDatasetByCaption(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test_features.h5')))
 
     return (
-        NumpyRandomCaptionByImageDataset(os.path.join(annotations_path, 'captions_train2014.json'), os.path.join(dataset_path, 'train.npy')),
-        NumpyCaptionsByImageDataset(os.path.join(annotations_path, 'captions_val2014.json'), os.path.join(dataset_path, 'val.npy')),
-        NumpyCaptionsByImageDataset(os.path.join(annotations_path, 'captions_test2014.json'), os.path.join(dataset_path, 'test.npy')))
+        NumpyRandomCaptionByImageDataset(
+            os.path.join(annotations_path, 'captions_train2014.json'),
+            os.path.join(dataset_path, 'train.npy')),
+        NumpyCaptionsByImageDataset(
+            os.path.join(annotations_path, 'captions_val2014.json'),
+            os.path.join(dataset_path, 'val.npy')),
+        NumpyCaptionsByImageDataset(
+            os.path.join(annotations_path, 'captions_test2014.json'),
+            os.path.join(dataset_path, 'test.npy')))
 
 
 def collate_fn_train_packed(batch):
@@ -133,14 +151,19 @@ def collate_fn_train_packed(batch):
             texts_list.append(text)
 
     images_list, texts_list = \
-        list(zip(*sorted(zip(images_list, texts_list), key=lambda x: x[1].shape[0], reverse=True)))
+        list(zip(*sorted(
+            zip(images_list, texts_list),
+            key=lambda x: x[1].shape[0], reverse=True)))
 
     inputs = [text[:-1] for text in texts_list]
     outputs = [text[1:] for text in texts_list]
 
-    packed_inputs = torch.nn.utils.rnn.pack_sequence(inputs, enforce_sorted=True)
-    packed_outputs = torch.nn.utils.rnn.pack_sequence(outputs, enforce_sorted=True)
+    packed_inputs = \
+        torch.nn.utils.rnn.pack_sequence(inputs, enforce_sorted=True)
+    packed_outputs = \
+        torch.nn.utils.rnn.pack_sequence(outputs, enforce_sorted=True)
     return torch.stack(images_list), packed_inputs, packed_outputs
+
 
 def collate_fn_test(batch):
     images_list = []
@@ -150,6 +173,7 @@ def collate_fn_test(batch):
         texts_list.append(texts)
 
     return torch.stack(images_list), texts_list
+
 
 def collate_fn_train_padded(batch):
     images_list = []
@@ -170,6 +194,7 @@ def collate_fn_train_padded(batch):
 
     return torch.stack(images_list), torch.stack(inputs), torch.stack(outputs)
 
+
 def get_coco_dataloaders(dataset_path, train_bs, val_bs, test_bs, data_mode):
     assert data_mode == 'packed' or data_mode == 'padded'
     train_dataset, val_dataset, test_dataset = get_coco_datasets(dataset_path)
@@ -180,6 +205,12 @@ def get_coco_dataloaders(dataset_path, train_bs, val_bs, test_bs, data_mode):
         collate_fn_train = collate_fn_train_padded
 
     return (
-        DataLoader(train_dataset, batch_size=train_bs, shuffle=True, collate_fn=collate_fn_train),
-        DataLoader(val_dataset, batch_size=val_bs, shuffle=False, collate_fn=collate_fn_test),
-        DataLoader(test_dataset, batch_size=test_bs, shuffle=False, collate_fn=collate_fn_test))
+        DataLoader(
+            train_dataset, batch_size=train_bs,
+            shuffle=True, collate_fn=collate_fn_train),
+        DataLoader(
+            val_dataset, batch_size=val_bs,
+            shuffle=False, collate_fn=collate_fn_test),
+        DataLoader(
+            test_dataset, batch_size=test_bs,
+            shuffle=False, collate_fn=collate_fn_test))
