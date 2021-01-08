@@ -250,10 +250,12 @@ def preprocess_images(config):
             id_to_idx[image['id']] = i
             idx_to_id[i] = image['id']
         with open(os.path.join(
-                config['out_data_folder'], 'id_to_idx.json'), 'w') as f:
+                config['out_data_folder'],
+                split + 'id_to_idx.json'), 'w') as f:
             json.dump(id_to_idx, f)
         with open(os.path.join(
-                config['out_data_folder'], 'idx_to_id.json'), 'w') as f:
+                config['out_data_folder'],
+                split + 'idx_to_id.json'), 'w') as f:
             json.dump(idx_to_id, f)
 
         out_path = os.path.join(config['out_data_folder'], split)
