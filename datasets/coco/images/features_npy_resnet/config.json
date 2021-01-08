@@ -1,2 +1,6 @@
 {
+  "out_data_folder": "features_npy_resnet",
+  "data": "features",
+  "data_type": "npy",
+  "model": "resnet"
 }

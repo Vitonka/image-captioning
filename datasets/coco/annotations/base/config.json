@@ -1,4 +1,4 @@
 {
-  "min_word_freq": 0,
-  "max_length": 15
+  "out_data_folder": "base",
+  "min_word_freq": 5
 }
