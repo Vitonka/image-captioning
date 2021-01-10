@@ -9,7 +9,7 @@ from torch import nn
 
 from dataset import get_coco_dataloaders
 from train import train, validate
-from models import SimpleModelWithPreptrainedImageEmbeddings
+from models import ShowAndTellWithPretrainedImageEmbeddings
 
 DATASETS_ROOT = '../datasets'
 SUMMARY_WRITER_ROOT = '../training_logs'
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     trainloader, valloader, _ = get_coco_dataloaders(data_config)
 
     model_config = config['model_config']
-    model = SimpleModelWithPreptrainedImageEmbeddings(
+    model = ShowAndTellWithPretrainedImageEmbeddings(
         dict_size=len(w2i),
         embedding_dim=model_config['embedding_dim'],
         hidden_size=model_config['hidden_size'],
