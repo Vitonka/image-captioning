@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
+import time
 
 from dataset import get_coco_dataloaders
 from train import train, validate
@@ -78,6 +79,7 @@ if __name__ == '__main__':
     for epoch in range(training_config['epochs']):
         print('-----')
         print('Epoch: ', epoch)
+        epoch_start_time = time.time()
 
         print('Train')
         loss = train(
@@ -93,9 +95,12 @@ if __name__ == '__main__':
                 model, valloader, device,
                 w2i, i2w, data_config['data_mode'])
 
+        epoch_duration = time.time() - epoch_start_time
         writer.add_scalar('loss', loss, epoch)
+        writer.add_scalar('duration', epoch_duration, epoch)
         for score_name in scores:
             writer.add_scalar(score_name, scores[score_name], epoch)
 
         print('Loss: ', loss)
+        print('Duration: ', epoch_duration)
         print('Scores: ', scores)
