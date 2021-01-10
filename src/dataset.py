@@ -148,7 +148,7 @@ def collate_fn_train_padded(batch):
         max_len = max(max_len, len(text))
     texts_tensors = []
     for text in texts_list:
-        matrix = np.zeros(max_len, dtype='int64') + 16423
+        matrix = np.zeros(max_len, dtype='int64')
         matrix[0:len(text)] = text
         texts_tensors.append(torch.tensor(matrix))
 

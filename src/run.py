@@ -48,9 +48,6 @@ if __name__ == '__main__':
     with open(os.path.join(annotations_path, 'i2w.json')) as f:
         i2w = json.load(f)
         i2w = {int(i): i2w[i] for i in i2w}
-    # TODO(vitonka): move to a dict creation
-    w2i['<PAD>'] = len(w2i)
-    i2w[len(w2i) - 1] = '<PAD>'
 
     trainloader, valloader, _ = get_coco_dataloaders(data_config)
 

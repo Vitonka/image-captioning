@@ -59,11 +59,12 @@ def create_dictionary_from_annotations(annotations, min_word_freq=1):
         for word in text:
             c[word] += 1
 
-    c_filtered = [word for word in c if c[word] > min_word_freq]
+    c_filtered = []
+    c_filtered.append(PAD)
     c_filtered.append(START)
     c_filtered.append(UNK)
     c_filtered.append(END)
-    c_filtered.append(PAD)
+    c_filtered += [word for word in c if c[word] > min_word_freq]
 
     i2w = {}
     w2i = {}
@@ -72,4 +73,5 @@ def create_dictionary_from_annotations(annotations, min_word_freq=1):
         i2w[index] = word
         w2i[word] = index
 
+    assert w2i[PAD] == 0, 'Padding has nonzero index in a dictionary'
     return w2i, i2w
