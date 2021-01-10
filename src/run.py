@@ -7,14 +7,12 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 
-from utils.text_utils import create_dictionary
 from dataset import get_coco_dataloaders
-from beam_search import beam_search
 from train import train, validate
-from models import SimpleModel, SimpleModelWithEncoder, SimpleModelWithPreptrainedImageEmbeddings
+from models import SimpleModelWithPreptrainedImageEmbeddings
 
 DATASETS_ROOT = '../datasets'
-SUMMARY_WRITER_ROOT='../training_logs'
+SUMMARY_WRITER_ROOT = '../training_logs'
 MODEL_ROOT = '../models'
 MODEL_FILE = 'model.pth'
 
@@ -27,55 +25,73 @@ if __name__ == '__main__':
     with open(args.config) as f:
         config = json.load(f)
 
-    assert config['data_mode'] == 'packed' or config['data_mode'] == 'padded'
+    data_config = config['data_config']
+    assert data_config['data_mode'] == 'packed' or \
+        data_config['data_mode'] == 'padded'
 
     # Set up device for training
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    dataset_path = os.path.join(DATASETS_ROOT, config['dataset_name'])
+    annotations_config_path = \
+        os.path.join(DATASETS_ROOT, data_config['annotations_config_path'])
+    with open(annotations_config_path) as f:
+        annotations_config = json.load(f)
+    annotations_path = \
+        os.path.join(
+            DATASETS_ROOT, 'coco', 'annotations',
+            annotations_config['out_data_folder'])
 
-    with open(os.path.join(dataset_path, 'w2i.json')) as f:
+    with open(os.path.join(annotations_path, 'w2i.json')) as f:
         w2i = json.load(f)
 
-    with open(os.path.join(dataset_path, 'i2w.json')) as f:
+    with open(os.path.join(annotations_path, 'i2w.json')) as f:
         i2w = json.load(f)
         i2w = {int(i): i2w[i] for i in i2w}
     # TODO(vitonka): move to a dict creation
     w2i['<PAD>'] = len(w2i)
     i2w[len(w2i) - 1] = '<PAD>'
 
-    trainloader, valloader, _ = get_coco_dataloaders(dataset_path, config['batch_size'], 1, 1, config['data_mode'])
+    trainloader, valloader, _ = get_coco_dataloaders(data_config)
 
-#    model = SimpleModelWithEncoder(dict_size=len(w2i), embedding_dim=config['embedding_dim'], hidden_size=config['hidden_size'])
+    model_config = config['model_config']
     model = SimpleModelWithPreptrainedImageEmbeddings(
         dict_size=len(w2i),
-        embedding_dim=config['embedding_dim'],
-        hidden_size=config['hidden_size'],
-        data_mode=config['data_mode'],
+        embedding_dim=model_config['embedding_dim'],
+        hidden_size=model_config['hidden_size'],
+        data_mode=data_config['data_mode'],
         pad_idx=w2i['<PAD>'])
     model.to(device)
 
     criterion = nn.CrossEntropyLoss(ignore_index=w2i['<PAD>'])
-    optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad ], lr=config['optimizer_learning_rate'])
+    training_config = config['training_config']
+    optimizer = torch.optim.Adam(
+        [param for param in model.parameters() if param.requires_grad],
+        lr=training_config['optimizer_learning_rate'])
 
-    MODEL_DIR = os.path.join(MODEL_ROOT, config['model_name'])
+    MODEL_DIR = os.path.join(MODEL_ROOT, config['experiment_name'])
     Path(MODEL_DIR).mkdir(parents=True, exist_ok=True)
     MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
-    writer = SummaryWriter(os.path.join(SUMMARY_WRITER_ROOT, config['model_name']))
+    writer = SummaryWriter(
+        os.path.join(SUMMARY_WRITER_ROOT, config['experiment_name']))
 
-    for epoch in range(config['epochs']):
+    for epoch in range(training_config['epochs']):
         print('-----')
         print('Epoch: ', epoch)
 
         print('Train')
-        loss = train(model, trainloader, criterion, optimizer, device, config['data_mode'])
+        loss = train(
+            model, trainloader,
+            criterion, optimizer,
+            device, data_config['data_mode'])
 
         torch.save(model.state_dict(), MODEL_PATH)
 
         with torch.no_grad():
             print('Validate')
-            scores = validate(model, valloader, device, w2i, i2w, config['data_mode'])
+            scores = validate(
+                model, valloader, device,
+                w2i, i2w, data_config['data_mode'])
 
         writer.add_scalar('loss', loss, epoch)
         for score_name in scores:
