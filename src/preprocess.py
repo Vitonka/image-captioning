@@ -243,20 +243,7 @@ def preprocess_images(config):
             ['train', 'val', 'test'],
             [train_annotations, val_annotations, test_annotations]):
         images = annotations['images']
-        images.sort(key=lambda x: x['id'])
-
-        id_to_idx, idx_to_id = {}, {}
-        for i, image in zip(range(len(images)), images):
-            id_to_idx[image['id']] = i
-            idx_to_id[i] = image['id']
-        with open(os.path.join(
-                config['out_data_folder'],
-                split + 'id_to_idx.json'), 'w') as f:
-            json.dump(id_to_idx, f)
-        with open(os.path.join(
-                config['out_data_folder'],
-                split + 'idx_to_id.json'), 'w') as f:
-            json.dump(idx_to_id, f)
+        assert sorted(images, key=lambda x: x['id']) == images
 
         out_path = os.path.join(config['out_data_folder'], split)
         if config['data_type'] == 'npy':
