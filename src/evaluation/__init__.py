@@ -3,7 +3,8 @@ from .meteor import Meteor
 from .rouge import Rouge
 from .cider import Cider
 from .spice import Spice
-from .tokenizer import PTBTokenizer
+from .tokenizer import PTBTokenizer  # noqa
+
 
 def compute_scores(gts, gen):
     metrics = (Bleu(), Meteor(), Rouge(), Cider(), Spice())

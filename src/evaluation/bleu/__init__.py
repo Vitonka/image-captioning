@@ -1,1 +1,1 @@
-from .bleu import Bleu
+from .bleu import Bleu  # noqa

@@ -1,1 +1,1 @@
-from .spice import Spice
+from .spice import Spice  # noqa

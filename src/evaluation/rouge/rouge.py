@@ -8,7 +8,6 @@
 # Author : Ramakrishna Vedantam <vrama91@vt.edu>
 
 import numpy as np
-import pdb
 
 
 def my_lcs(string, sub):
@@ -16,14 +15,18 @@ def my_lcs(string, sub):
     Calculates longest common subsequence for a pair of tokenized strings
     :param string : list of str : tokens from a string split using whitespace
     :param sub : list of str : shorter string, also split using whitespace
-    :returns: length (list of int): length of the longest common subsequence between the two strings
+    :returns: length (list of int): length of the longest common subsequence
+        between the two strings
 
-    Note: my_lcs only gives length of the longest common subsequence, not the actual LCS
+    Note: my_lcs only gives length of the longest common subsequence,
+        not the actual LCS
     """
     if (len(string) < len(sub)):
         sub, string = string, sub
 
-    lengths = [[0 for i in range(0, len(sub) + 1)] for j in range(0, len(string) + 1)]
+    lengths = [
+        [0 for i in range(0, len(sub) + 1)]
+        for j in range(0, len(string) + 1)]
 
     for j in range(1, len(sub) + 1):
         for i in range(1, len(string) + 1):
@@ -37,7 +40,8 @@ def my_lcs(string, sub):
 
 class Rouge():
     '''
-    Class for computing ROUGE-L score for a set of candidate sentences for the MS COCO test set
+    Class for computing ROUGE-L score for a set of candidate sentences
+        for the MS COCO test set
 
     '''
 
@@ -49,8 +53,10 @@ class Rouge():
         """
         Compute ROUGE-L score given one candidate and references for an image
         :param candidate: str : candidate sentence to be evaluated
-        :param refs: list of str : COCO reference sentences for the particular image to be evaluated
-        :returns score: int (ROUGE-L score for the candidate evaluated against references)
+        :param refs: list of str : COCO reference sentences
+            for the particular image to be evaluated
+        :returns score: int (ROUGE-L score for the candidate
+            evaluated against references)
         """
         assert (len(candidate) == 1)
         assert (len(refs) > 0)
@@ -72,18 +78,24 @@ class Rouge():
         rec_max = max(rec)
 
         if (prec_max != 0 and rec_max != 0):
-            score = ((1 + self.beta ** 2) * prec_max * rec_max) / float(rec_max + self.beta ** 2 * prec_max)
+            score = (
+                ((1 + self.beta ** 2) * prec_max * rec_max) /
+                float(rec_max + self.beta ** 2 * prec_max))
         else:
             score = 0.0
         return score
 
     def compute_score(self, gts, res):
         """
-        Computes Rouge-L score given a set of reference and candidate sentences for the dataset
+        Computes Rouge-L score given a set of reference and
+            candidate sentences for the dataset
         Invoked by evaluate_captions.py
-        :param hypo_for_image: dict : candidate / test sentences with "image name" key and "tokenized sentences" as values
-        :param ref_for_image: dict : reference MS-COCO sentences with "image name" key and "tokenized sentences" as values
-        :returns: average_score: float (mean ROUGE-L score computed by averaging scores for all the images)
+        :param hypo_for_image: dict : candidate / test sentences
+            with "image name" key and "tokenized sentences" as values
+        :param ref_for_image: dict : reference MS-COCO sentences
+            with "image name" key and "tokenized sentences" as values
+        :returns: average_score: float (mean ROUGE-L score
+            computed by averaging scores for all the images)
         """
         assert (gts.keys() == res.keys())
         imgIds = gts.keys()

@@ -1,13 +1,17 @@
 # Filename: cider.py
 #
-# Description: Describes the class to compute the CIDEr (Consensus-Based Image Description Evaluation) Metric
-#               by Vedantam, Zitnick, and Parikh (http://arxiv.org/abs/1411.5726)
+# Description: Describes the class to compute the CIDEr
+#               (Consensus-Based Image Description Evaluation) Metric
+#               by Vedantam, Zitnick, and Parikh
+#               (http://arxiv.org/abs/1411.5726)
 #
 # Creation Date: Sun Feb  8 14:16:54 2015
 #
-# Authors: Ramakrishna Vedantam <vrama91@vt.edu> and Tsung-Yi Lin <tl483@cornell.edu>
+# Authors: Ramakrishna Vedantam <vrama91@vt.edu> and
+#          Tsung-Yi Lin <tl483@cornell.edu>
 
 from .cider_scorer import CiderScorer
+
 
 class Cider:
     """
@@ -29,13 +33,17 @@ class Cider:
     def compute_score(self, gts, res):
         """
         Main function to compute CIDEr score
-        :param  gts (dict) : dictionary with key <image> and value <tokenized hypothesis / candidate sentence>
-                res (dict)  : dictionary with key <image> and value <tokenized reference sentence>
+        :param  gts (dict) : dictionary with key <image> and
+                             value <tokenized hypothesis / candidate sentence>
+                res (dict)  : dictionary with key <image> and
+                              value <tokenized reference sentence>
         :return: cider (float) : computed CIDEr score for the corpus
         """
         assert(gts.keys() == res.keys())
-        cider_scorer = CiderScorer(gts, test=res, n=self._n, sigma=self._sigma, doc_frequency=self.doc_frequency,
-                                   ref_len=self.ref_len)
+        cider_scorer = CiderScorer(
+            gts, test=res, n=self._n, sigma=self._sigma,
+            doc_frequency=self.doc_frequency,
+            ref_len=self.ref_len)
         return cider_scorer.compute_score()
 
     def __str__(self):

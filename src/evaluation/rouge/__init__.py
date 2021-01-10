@@ -1,1 +1,1 @@
-from .rouge import Rouge
+from .rouge import Rouge  # noqa

@@ -1,1 +1,1 @@
-from .meteor import Meteor
+from .meteor import Meteor  # noqa

@@ -1,1 +1,1 @@
-from .cider import Cider
+from .cider import Cider  # noqa

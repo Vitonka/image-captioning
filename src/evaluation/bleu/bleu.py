@@ -38,7 +38,8 @@ class Bleu:
 
         # score, scores = bleu_scorer.compute_score(option='shortest')
         score, scores = bleu_scorer.compute_score(option='closest', verbose=0)
-        # score, scores = bleu_scorer.compute_score(option='average', verbose=1)
+        # score, scores = \
+        #     bleu_scorer.compute_score(option='average', verbose=1)
 
         return score, scores
 

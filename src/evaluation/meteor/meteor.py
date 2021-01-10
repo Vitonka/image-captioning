@@ -10,6 +10,7 @@ from utils import download_from_url
 METEOR_GZ_URL = 'http://aimagelab.ing.unimore.it/speaksee/data/meteor.tgz'
 METEOR_JAR = 'meteor-1.5.jar'
 
+
 class Meteor:
     def __init__(self):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -23,13 +24,15 @@ class Meteor:
             tar.close()
             os.remove(gz_path)
 
-        self.meteor_cmd = ['java', '-jar', '-Xmx2G', METEOR_JAR, \
-                '-', '-', '-stdio', '-l', 'en', '-norm']
-        self.meteor_p = subprocess.Popen(self.meteor_cmd, \
-                cwd=os.path.dirname(os.path.abspath(__file__)), \
-                stdin=subprocess.PIPE, \
-                stdout=subprocess.PIPE, \
-                stderr=subprocess.PIPE)
+        self.meteor_cmd = [
+            'java', '-jar', '-Xmx2G', METEOR_JAR, '-',
+            '-', '-stdio', '-l', 'en', '-norm']
+        self.meteor_p = subprocess.Popen(
+            self.meteor_cmd,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         # Used to guarantee thread safety
         self.lock = threading.Lock()
 
@@ -47,7 +50,7 @@ class Meteor:
 
         self.meteor_p.stdin.write('{}\n'.format(eval_line).encode())
         self.meteor_p.stdin.flush()
-        for i in range(0,len(imgIds)):
+        for i in range(0, len(imgIds)):
             scores.append(float(self.meteor_p.stdout.readline().strip()))
         score = float(self.meteor_p.stdout.readline().strip())
         self.lock.release()
@@ -55,9 +58,10 @@ class Meteor:
         return score, scores
 
     def _stat(self, hypothesis_str, reference_list):
-        # SCORE ||| reference 1 words ||| reference n words ||| hypothesis words
-        hypothesis_str = hypothesis_str.replace('|||','').replace('  ',' ')
-        score_line = ' ||| '.join(('SCORE', ' ||| '.join(reference_list), hypothesis_str))
+        # SCORE ||| reference 1 words ||| reference n words ||| hypothesis words  # noqa
+        hypothesis_str = hypothesis_str.replace('|||', '').replace('  ', ' ')
+        score_line = ' ||| '.join(
+            ('SCORE', ' ||| '.join(reference_list), hypothesis_str))
         self.meteor_p.stdin.write('{}\n'.format(score_line).encode())
         self.meteor_p.stdin.flush()
         raw = self.meteor_p.stdout.readline().decode().strip()
