@@ -107,14 +107,18 @@ def preprocess_annotations(config):
         test_annotations = json.load(f)
 
     # Create dictionary and preprocess train annotations
+    print('Create dictionary from annotations')
     w2i, i2w = create_dictionary_from_annotations(
         train_annotations, min_word_freq=config['min_word_freq'])
+    print('Transform train annotations')
     train_annotations['annotations'] = \
         transform_annotations(train_annotations['annotations'], w2i)
 
     # Clean val and test annotations
+    print('Clean val annotations')
     val_annotations['annotations'] = \
         clean_annotations(val_annotations['annotations'])
+    print('Clean test annotations')
     test_annotations['annotations'] = \
         clean_annotations(test_annotations['annotations'])
 
@@ -137,7 +141,7 @@ def preprocess_annotations(config):
 
 def transform_annotations(annotations, w2i):
     transformed_annotations = []
-    for annotation in annotations:
+    for annotation in tqdm(annotations):
         annotation['caption'] = transform_text(annotation['caption'], w2i)
         transformed_annotations.append(annotation)
     return transformed_annotations
@@ -145,7 +149,7 @@ def transform_annotations(annotations, w2i):
 
 def clean_annotations(annotations):
     cleaned_annotations = []
-    for annotation in annotations:
+    for annotation in tqdm(annotations):
         annotation['caption'] = ' '.join(clean_text(annotation['caption']))
         cleaned_annotations.append(annotation)
     return cleaned_annotations
@@ -269,9 +273,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.split_annotations:
+        print('-----')
+        print('Split annotations')
         split_annotations()
 
     if args.annotations_processing_config:
+        print('-----')
+        print('Preprocess annotations')
         with open(args.annotations_processing_config) as f:
             config = json.load(f)
             config['out_data_folder'] = os.path.join(
@@ -279,6 +287,8 @@ if __name__ == '__main__':
             preprocess_annotations(config)
 
     if args.images_processing_config:
+        print('-----')
+        print('Preprocess images')
         with open(args.images_processing_config) as f:
             config = json.load(f)
             config['out_data_folder'] = os.path.join(
