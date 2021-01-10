@@ -33,12 +33,18 @@ def train(model, dataloader, criterion, optimizer, device, data_mode):
 
     return total_loss
 
-def validate(model, dataloader, device, w2i, i2w, data_mode, max_length=15, beam_size=3):
+
+def validate(
+        model, dataloader, device,
+        w2i, i2w,
+        data_mode, max_length=15, beam_size=3):
     gts_dict = {}
     hyps_dict = {}
     bad_count = 0
-    for i, (image, texts) in tqdm(enumerate(dataloader), total=len(dataloader)):
-        hyps = beam_search(model, image, w2i, i2w, device, max_length, beam_size, data_mode)
+    for i, (image, texts) in tqdm(
+            enumerate(dataloader), total=len(dataloader)):
+        hyps = beam_search(
+            model, image, w2i, i2w, device, max_length, beam_size, data_mode)
         if len(hyps) == 0:
             bad_count += 1
             continue
