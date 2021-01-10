@@ -1,0 +1,27 @@
+{
+  "experiment_name": "Base",
+
+  "data_config": {
+    "images_config_path": "coco/images/features_npy_resnet/config.json",
+    "annotations_config_path": "coco/annotations/base/config.json",
+    "data_mode": "packed",
+    "train_batch_size": 50,
+    "val_batch_size": 1,
+    "test_batch_size": 1
+  },
+
+  "model_config": {
+    "model_name": "SimpleModelWithEncoder",
+    "embedding_dim": 128,
+    "hidden_size": 128
+  },
+
+  "training_config": {
+    "optimizer_learning_rate": 0.001,
+    "epochs": 500
+  },
+
+  "validation_config": {
+    "beam_size": 3
+  }
+}
