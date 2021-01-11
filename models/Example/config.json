@@ -1,13 +1,12 @@
 {
-  "experiment_name": "Base",
+  "experiment_name": "Example",
 
   "data_config": {
     "images_config_path": "coco/images/features_npy_resnet/config.json",
     "annotations_config_path": "coco/annotations/base/config.json",
     "data_mode": "packed",
-    "train_batch_size": 50,
-    "val_batch_size": 1,
-    "test_batch_size": 1
+    "train_captions_choice_mode": "all",
+    "train_batch_size": 50
   },
 
   "model_config": {

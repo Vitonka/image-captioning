@@ -1,0 +1,6 @@
+{
+  "out_data_folder": "features_h5py_resnet",
+  "data": "features",
+  "data_type": "h5py",
+  "model": "resnet"
+}
