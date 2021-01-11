@@ -26,33 +26,10 @@ IMAGES_LOADERS = {
 }
 
 
-class RandomCaptionByImageDataset(Dataset):
-    def __init__(self, annotations_path, images_path, images_loader):
-
-        with open(annotations_path) as f:
-            annotations = json.load(f)
-        self._idx_to_captions = defaultdict(list)
-        for annotation in annotations['annotations']:
-            idx = annotation['idx']
-            self._idx_to_captions[idx].append(annotation['caption'])
-
-        self._images = images_loader(images_path)
-
-    def __len__(self):
-        return len(self._images)
-
-    def __getitem__(self, idx):
-        image = self._images[idx]
-
-        captions_for_image = self._idx_to_captions[idx]
-        caption = random.choice(captions_for_image)
-
-        return torch.tensor(image, dtype=torch.float32), \
-            torch.tensor(caption, dtype=torch.int64)
-
-
 class CaptionsByImageDataset(Dataset):
-    def __init__(self, annotations_path, images_path, images_loader):
+    def __init__(
+            self, annotations_path, images_path,
+            images_loader, captions_choice_mode):
 
         with open(annotations_path) as f:
             annotations = json.load(f)
@@ -63,15 +40,24 @@ class CaptionsByImageDataset(Dataset):
 
         self._images = images_loader(images_path)
 
+        assert captions_choice_mode == 'all' or \
+            captions_choice_mode == 'random'
+        self._captions_choice_mode = captions_choice_mode
+
     def __len__(self):
         return len(self._images)
 
     def __getitem__(self, idx):
         image = self._images[idx]
         captions_for_image = self._idx_to_captions[idx]
+        if self._captions_choice_mode == 'all':
+            pass
+        elif self._captions_choice_mode == 'random':
+            captions_for_image = [random.choice(captions_for_image)]
+        else:
+            assert False, 'Unknown captions choice mode'
 
-        return torch.tensor(image, dtype=torch.float32), \
-            captions_for_image
+        return image, captions_for_image
 
 
 def get_coco_datasets(config):
@@ -99,70 +85,70 @@ def get_coco_datasets(config):
     images_loader = IMAGES_LOADERS[images_config['data_type']]
 
     return (
-        RandomCaptionByImageDataset(
+        CaptionsByImageDataset(
             annotations_path.format('train'),
             images_path.format('train'),
-            images_loader),
+            images_loader,
+            captions_choice_mode=config['train_captions_choice_mode']),
         CaptionsByImageDataset(
             annotations_path.format('val'),
             images_path.format('val'),
-            images_loader),
+            images_loader,
+            captions_choice_mode='all'),
         CaptionsByImageDataset(
             annotations_path.format('test'),
             images_path.format('test'),
-            images_loader))
+            images_loader,
+            captions_choice_mode='all'))
 
 
-def collate_fn_train_packed(batch):
+def collate_fn_train(batch, data_mode):
+    assert data_mode == 'packed' or data_mode == 'padded'
+
     images_list = []
     texts_list = []
     for image, texts in batch:
         if not isinstance(texts[0], list):
             texts = [texts]
         for text in texts:
-            images_list.append(image)
+            images_list.append(torch.tensor(image, dtype=torch.float32))
             texts_list.append(text)
 
     images_list, texts_list = \
         list(zip(*sorted(
             zip(images_list, texts_list),
-            key=lambda x: x[1].shape[0], reverse=True)))
+            key=lambda x: len(x[1]), reverse=True)))
+
+    if data_mode == 'packed':
+        texts_list = [torch.tensor(text) for text in texts_list]
+    elif data_mode == 'padded':
+        max_len = len(texts_list[0])
+        padded_texts = []
+        for text in texts_list:
+            padded_text = np.zeros(max_len, dtype='int64')
+            padded_text[0:len(text)] = text
+            padded_texts.append(torch.tensor(padded_text))
+        texts_list = padded_texts
 
     inputs = [text[:-1] for text in texts_list]
     outputs = [text[1:] for text in texts_list]
 
-    packed_inputs = \
-        torch.nn.utils.rnn.pack_sequence(inputs, enforce_sorted=True)
-    packed_outputs = \
-        torch.nn.utils.rnn.pack_sequence(outputs, enforce_sorted=True)
-    return torch.stack(images_list), packed_inputs, packed_outputs
+    if data_mode == 'packed':
+        inputs = \
+            torch.nn.utils.rnn.pack_sequence(inputs, enforce_sorted=True)
+        outputs = \
+            torch.nn.utils.rnn.pack_sequence(outputs, enforce_sorted=True)
+    elif data_mode == 'padded':
+        inputs, outputs = torch.stack(inputs), torch.stack(outputs)
 
-
-def collate_fn_train_padded(batch):
-    images_list = []
-    texts_list = []
-    max_len = 0
-    for image, text in batch:
-        images_list.append(image)
-        texts_list.append(text)
-        max_len = max(max_len, len(text))
-    texts_tensors = []
-    for text in texts_list:
-        matrix = np.zeros(max_len, dtype='int64')
-        matrix[0:len(text)] = text
-        texts_tensors.append(torch.tensor(matrix))
-
-    inputs = [text[:-1] for text in texts_tensors]
-    outputs = [text[1:] for text in texts_tensors]
-
-    return torch.stack(images_list), torch.stack(inputs), torch.stack(outputs)
+    return torch.stack(images_list), inputs, outputs
 
 
 def collate_fn_test(batch):
     images_list = []
     texts_list = []
     for image, texts in batch:
-        images_list.append(image)
+        images_list.append(torch.tensor(image, dtype=torch.float32))
         texts_list.append(texts)
 
     return torch.stack(images_list), texts_list
@@ -172,18 +158,17 @@ def get_coco_dataloaders(config):
     train_dataset, val_dataset, test_dataset = get_coco_datasets(config)
 
     assert config['data_mode'] == 'packed' or config['data_mode'] == 'padded'
-    if config['data_mode'] == 'packed':
-        collate_fn_train = collate_fn_train_packed
-    elif config['data_mode'] == 'padded':
-        collate_fn_train = collate_fn_train_padded
+
+    def collate_fn(batch):
+        return collate_fn_train(batch, config['data_mode'])
 
     return (
         DataLoader(
             train_dataset, batch_size=config['train_batch_size'],
-            shuffle=True, collate_fn=collate_fn_train),
+            shuffle=True, collate_fn=collate_fn),
         DataLoader(
-            val_dataset, batch_size=config['val_batch_size'],
+            val_dataset, batch_size=1,
             shuffle=False, collate_fn=collate_fn_test),
         DataLoader(
-            test_dataset, batch_size=config['test_batch_size'],
+            test_dataset, batch_size=1,
             shuffle=False, collate_fn=collate_fn_test))
