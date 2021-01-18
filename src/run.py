@@ -10,7 +10,7 @@ import time
 
 from dataset import get_coco_dataloaders
 from train import train, validate
-from models import ShowAndTellWithPretrainedImageEmbeddings
+from models import ShowAndTellWithPretrainedImageEmbeddings, ShowAndTellLSTM
 
 DATASETS_ROOT = '../datasets'
 SUMMARY_WRITER_ROOT = '../training_logs'
@@ -52,12 +52,23 @@ if __name__ == '__main__':
     trainloader, valloader, _ = get_coco_dataloaders(data_config)
 
     model_config = config['model_config']
-    model = ShowAndTellWithPretrainedImageEmbeddings(
-        dict_size=len(w2i),
-        embedding_dim=model_config['embedding_dim'],
-        hidden_size=model_config['hidden_size'],
-        data_mode=data_config['data_mode'],
-        pad_idx=w2i['<PAD>'])
+    if (model_config['model_name'] ==
+            'ShowAndTellWithPretrainedImageEmbeddings'):
+        model_type = 'rnn'
+        model = ShowAndTellWithPretrainedImageEmbeddings(
+            dict_size=len(w2i),
+            embedding_dim=model_config['embedding_dim'],
+            hidden_size=model_config['hidden_size'],
+            data_mode=data_config['data_mode'],
+            pad_idx=w2i['<PAD>'])
+    elif model_config['model_name'] == 'ShowAndTellLSTM':
+        model_type = 'lstm'
+        model = ShowAndTellLSTM(
+            dict_size=len(w2i),
+            embedding_dim=model_config['embedding_dim'],
+            hidden_size=model_config['hidden_size'],
+            data_mode=data_config['data_mode'],
+            pad_idx=w2i['<PAD>'])
     model.to(device)
 
     criterion = nn.CrossEntropyLoss(ignore_index=w2i['<PAD>'])
@@ -89,7 +100,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             print('Validate')
             scores = validate(
-                model, valloader, device,
+                model, model_type, valloader, device,
                 w2i, i2w, data_config['data_mode'])
 
         epoch_duration = time.time() - epoch_start_time
