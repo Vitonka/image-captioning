@@ -74,7 +74,7 @@ if __name__ == '__main__':
             data_mode=data_config['data_mode'],
             pad_idx=w2i['<PAD>'])
     elif model_config['model_name'] == 'ShowAttendTell':
-        model_type = 'lstm'
+        model_type = 'attention'
         model = ShowAttendTell(
             dict_size=len(w2i),
             embedding_dim=model_config['embedding_dim'],

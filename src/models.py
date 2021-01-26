@@ -193,15 +193,8 @@ class ShowAttendTell(nn.Module):
 
         return attended
 
-    def forward(self, image, input_captions):
-        image_vector = self.encoder(image)
-        image_mean = torch.mean(image_vector, dim=2)
-        assert image_mean.shape[1:] == (2048,)
-
-        h = self.linear_h(image_mean)
-        c = self.linear_c(image_mean)
-
-        attended = self.attention(image_vector, h)
+    def decoder(self, history, input_captions, image_vector):
+        h, c, attended = history
         embeddings = self.embedding(input_captions)
         assert embeddings.shape[2] == self.embedding_dim
         seq_len = embeddings.shape[1]
@@ -225,4 +218,15 @@ class ShowAttendTell(nn.Module):
         ans = torch.stack(ans, dim=1)
         assert ans.shape[1:] == (seq_len, self.dict_size), \
             'Shape mismatch, actual shape is ' + str(ans.shape[1:])
-        return ans, (h, c)
+        return ans, (h, c, attended)
+
+    def forward(self, image, input_captions):
+        image_vector = self.encoder(image)
+        image_mean = torch.mean(image_vector, dim=2)
+        assert image_mean.shape[1:] == (2048,)
+
+        h = self.linear_h(image_mean)
+        c = self.linear_c(image_mean)
+
+        attended = self.attention(image_vector, h)
+        return self.decoder((h, c, attended), input_captions, image_vector)
