@@ -1,0 +1,27 @@
+{
+  "experiment_name": "ShowAttendTell",
+
+  "data_config": {
+    "images_config_path": "coco/images/images_h5py/config.json",
+    "annotations_config_path": "coco/annotations/base/config.json",
+    "data_mode": "padded",
+    "train_captions_choice_mode": "random",
+    "train_batch_size": 50
+  },
+
+  "model_config": {
+    "model_name": "ShowAttendTell",
+    "embedding_dim": 128,
+    "hidden_size": 128,
+    "attention_size": 128
+  },
+
+  "training_config": {
+    "optimizer_learning_rate": 0.001,
+    "epochs": 500
+  },
+
+  "validation_config": {
+    "beam_size": 3
+  }
+}

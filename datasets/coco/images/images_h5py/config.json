@@ -1,0 +1,5 @@
+{
+  "out_data_folder": "images_h5py",
+  "data": "images",
+  "data_type": "h5py"
+}

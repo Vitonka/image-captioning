@@ -203,6 +203,8 @@ def process_images_to_h5py(images, data_getter, out_path):
         shape = (len(images), 3, 224, 224)
     elif config['data'] == 'features':
         shape = (len(images), 2048)
+    elif config['data'] == 'features_extended':
+        shape = (len(images), 2048, 7, 7)
     data = h5_file.create_dataset(
         'data', shape=shape, dtype=np.float32, fillvalue=0)
     for i, image in tqdm(list(enumerate(images))):
@@ -213,11 +215,16 @@ def process_images_to_h5py(images, data_getter, out_path):
 def preprocess_images(config):
     if config['data'] == 'images':
         data_getter = read_and_convert_image
-    elif config['data'] == 'features':
+    elif config['data'].startswith('features'):
+        if config['data'].endswith('extended'):
+            last_layer_ind = -2
+        else:
+            last_layer_ind = -1
+
         if config['model'] == 'resnet':
             resnet = torchvision.models.resnet101(pretrained=True)
             resnet.eval()
-            modules = list(resnet.children())[:-1]
+            modules = list(resnet.children())[:last_layer_ind]
             model = nn.Sequential(*modules)
         else:
             assert False, 'Unknown model'

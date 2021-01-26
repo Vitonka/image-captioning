@@ -127,9 +127,16 @@ class ShowAndTellLSTM(nn.Module):
 
 class ShowAttendTell(nn.Module):
     def __init__(
-            self,
-            embedding_dim, hidden_size):
+            self, dict_size,
+            embedding_dim, hidden_size, attention_size,
+            data_mode, pad_idx=None):
         super(ShowAttendTell, self).__init__()
+        self._data_mode = data_mode
+        self.dict_size = dict_size
+        self.hidden_size = hidden_size
+        self.embedding_dim = embedding_dim
+        self.softmax = nn.Softmax(dim=1)
+        self.relu = nn.ReLU()
 
         resnet = torchvision.models.resnet101(pretrained=True)
         resnet.eval()
@@ -138,11 +145,25 @@ class ShowAttendTell(nn.Module):
 
         self.linear_h = nn.Linear(in_features=2048, out_features=hidden_size)
         self.linear_c = nn.Linear(in_features=2048, out_features=hidden_size)
+        self.linear_out = \
+            nn.Linear(in_features=hidden_size, out_features=dict_size)
 
-        self.att = nn.Linear(in_features=hidden_size, out_features=49)
+        self.encoded_att = \
+            nn.Linear(in_features=2048, out_features=attention_size)
+        self.hidden_att = \
+            nn.Linear(in_features=hidden_size, out_features=attention_size)
+        self.full_att = nn.Linear(in_features=attention_size, out_features=1)
 
-        self.hidden_size = hidden_size
-        self.softmax = nn.Softmax(dim=1)
+        self.embedding = \
+            nn.Embedding(
+                num_embeddings=dict_size,
+                embedding_dim=embedding_dim,
+                padding_idx=pad_idx)
+
+        self.lstm_cell = \
+            nn.LSTMCell(
+                input_size=embedding_dim + 2048,
+                hidden_size=hidden_size)
 
     def encoder(self, image):
         encoded = self.resnet(image)
@@ -158,8 +179,13 @@ class ShowAttendTell(nn.Module):
         assert encoded.shape[1:] == (2048, 49)
         assert hidden.shape[1:] == (self.hidden_size,)
 
-        att = self.softmax(self.att(hidden))
+        encoded_att = self.encoded_att(torch.transpose(encoded, 1, 2))
+        hidden_att = self.hidden_att(hidden)
+        combined_att = self.relu(encoded_att + hidden_att.unsqueeze(1))
+        att = self.full_att(combined_att).squeeze(-1)
+        att = self.softmax(att)
         assert att.shape[1:] == (49,)
+        att = att.unsqueeze(1)
 
         attended = torch.sum(att * encoded, dim=2)
         assert attended.shape[1:] == (2048,), \
@@ -167,12 +193,36 @@ class ShowAttendTell(nn.Module):
 
         return attended
 
-    def forward(self, image):
+    def forward(self, image, input_captions):
         image_vector = self.encoder(image)
         image_mean = torch.mean(image_vector, dim=2)
         assert image_mean.shape[1:] == (2048,)
 
-        h0 = self.linear_h(image_mean)
-        c0 = self.linear_c(image_mean)  # noqa
+        h = self.linear_h(image_mean)
+        c = self.linear_c(image_mean)
 
-        attended = self.attention(image_vector, h0)  # noqa
+        attended = self.attention(image_vector, h)
+        embeddings = self.embedding(input_captions)
+        assert embeddings.shape[2] == self.embedding_dim
+        seq_len = embeddings.shape[1]
+        ans = []
+
+        for i in range(seq_len):
+            cur_embeddings = embeddings[:, i, :]
+            assert cur_embeddings.shape[1] == self.embedding_dim
+            assert attended.shape[1] == 2048
+            assert cur_embeddings.shape[0] == attended.shape[0]
+
+            x = torch.cat((cur_embeddings, attended), dim=1)
+            h, c = self.lstm_cell(x, (h, c))
+            assert h.shape[1] == self.hidden_size
+            assert c.shape[1] == self.hidden_size
+
+            attended = self.attention(image_vector, h)
+            assert attended.shape[1:] == (2048,)
+            ans.append(self.linear_out(h))
+
+        ans = torch.stack(ans, dim=1)
+        assert ans.shape[1:] == (seq_len, self.dict_size), \
+            'Shape mismatch, actual shape is ' + str(ans.shape[1:])
+        return ans, (h, c)

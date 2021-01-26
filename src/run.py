@@ -10,7 +10,11 @@ import time
 
 from dataset import get_coco_dataloaders
 from train import train, validate
-from models import ShowAndTellWithPretrainedImageEmbeddings, ShowAndTellLSTM
+from models import (
+    ShowAndTellWithPretrainedImageEmbeddings,
+    ShowAndTellLSTM,
+    ShowAttendTell
+)
 
 DATASETS_ROOT = '../datasets'
 SUMMARY_WRITER_ROOT = '../training_logs'
@@ -67,6 +71,15 @@ if __name__ == '__main__':
             dict_size=len(w2i),
             embedding_dim=model_config['embedding_dim'],
             hidden_size=model_config['hidden_size'],
+            data_mode=data_config['data_mode'],
+            pad_idx=w2i['<PAD>'])
+    elif model_config['model_name'] == 'ShowAttendTell':
+        model_type = 'lstm'
+        model = ShowAttendTell(
+            dict_size=len(w2i),
+            embedding_dim=model_config['embedding_dim'],
+            hidden_size=model_config['hidden_size'],
+            attention_size=model_config['attention_size'],
             data_mode=data_config['data_mode'],
             pad_idx=w2i['<PAD>'])
     model.to(device)
