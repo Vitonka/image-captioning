@@ -2,7 +2,7 @@
   "experiment_name": "ShowAttendTell",
 
   "data_config": {
-    "images_config_path": "coco/images/images_h5py/config.json",
+    "images_config_path": "coco/images/features_extended_h5py_resnet/config.json",
     "annotations_config_path": "coco/annotations/base/config.json",
     "data_mode": "padded",
     "train_captions_choice_mode": "random",

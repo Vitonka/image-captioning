@@ -1,6 +1,5 @@
 from torch import nn
 import torch
-import torchvision
 
 
 class ShowAndTellWithPretrainedImageEmbeddings(nn.Module):
@@ -138,11 +137,6 @@ class ShowAttendTell(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         self.relu = nn.ReLU()
 
-        resnet = torchvision.models.resnet101(pretrained=True)
-        resnet.eval()
-        modules = list(resnet.children())[:-2]
-        self.resnet = nn.Sequential(*modules)
-
         self.linear_h = nn.Linear(in_features=2048, out_features=hidden_size)
         self.linear_c = nn.Linear(in_features=2048, out_features=hidden_size)
         self.linear_out = \
@@ -165,8 +159,7 @@ class ShowAttendTell(nn.Module):
                 input_size=embedding_dim + 2048,
                 hidden_size=hidden_size)
 
-    def encoder(self, image):
-        encoded = self.resnet(image)
+    def encoder(self, encoded):
         assert encoded.shape[1:] == (2048, 7, 7), \
             'Shapes mismatch, actual shape is ' + str(encoded.shape[1:])
 
