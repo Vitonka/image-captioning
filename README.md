@@ -30,5 +30,16 @@ My PhD studies on the image captioning topic.
 }
 ```
 
+## Instructions
+To download and preprocess data from scratch do the following:
+1. Run script `datasets/coco/download_raw.sh` to download raw dataset data
+2. Create your own images preprocessing config and put it in the directory `datasets/coco/images/your_preprocessing_name/config.json` or use the existing ones at `datasets/coco/images/*/config.json`
+3. Create your own captions preprocessing config and put it in the directory `datasets/coco/annotations/your_preprocessing_name/config.json` or use the existing ones at `datasets/coco/annotations/*/config.json`
+4. Run script `src/preprocess.py --split_annotations --annotations_processing_config path_to_config --images_processing_config path_to_config`
+
+To run model training on a preprocessed dataset do the following:
+1. Create a model config and put it in the directory `models/model_name/config.json` or use the existing ones at `models/*/config.json`
+2. Run script `src/run.py --config path_to_config`
+
 ## Acknowledgements
 The repository structure is inspired by [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/) and [How to plan and execute your ML and DL projects](https://blog.floydhub.com/structuring-and-planning-your-machine-learning-project/) articles.
